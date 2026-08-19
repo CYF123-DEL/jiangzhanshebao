@@ -550,13 +550,13 @@ function recalcLayerRates(stationName){
   const total = lc.gm.count + lc.mgmt.count + lc.mid.count + lc.emp.count;
   if(total === 0) return;
   lc.gm.layerRate = 100;
-  lc.mgmt.layerRate = Math.min(100, +(st.actual * 1.15).toFixed(1));
-  lc.mid.layerRate = Math.min(100, +(st.actual * 1.0).toFixed(1));
+  lc.mgmt.layerRate = lc.mgmt.count > 0 ? Math.min(100, +(st.actual * 1.15).toFixed(1)) : 0;
+  lc.mid.layerRate = lc.mid.count > 0 ? Math.min(100, +(st.actual * 1.0).toFixed(1)) : 0;
   const gmContrib = lc.gm.count * 100;
   const mgmtContrib = lc.mgmt.count * lc.mgmt.layerRate;
   const midContrib = lc.mid.count * lc.mid.layerRate;
   const empContrib = st.actual * total - gmContrib - mgmtContrib - midContrib;
-  lc.emp.layerRate = Math.max(0, Math.min(100, +(empContrib / lc.emp.count).toFixed(1)));
+  lc.emp.layerRate = lc.emp.count > 0 ? Math.max(0, Math.min(100, +(empContrib / lc.emp.count).toFixed(1))) : 0;
 }
 
 function saveRates(){ localStorage.setItem('ss7_rates', JSON.stringify(rates)); }
@@ -1301,20 +1301,26 @@ function renderLayerOverview(stName, st, lc){
     <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;font-size:13px">
       <span>省份：<b>${st.province}</b></span>
       <span>当前夯实率：<b style="color:${currentRate>=targetRate?'var(--success)':'var(--danger)'}">${currentRate.toFixed(1)}%</b></span>
-      <span>要求：<b>${targetRate}%</b></span>
-      <span>总人数：<b>${totalCount}</b></span>
+      <span>目标要求：<b>${targetRate}%（2026年）</b></span>
       <span>单位费率：<b>${unitRate}%</b></span>
     </div>`;
 
   html += `<div class="tbl-wrap"><table>
     <thead><tr><th>层级</th><th>人数</th><th>基数</th><th>当前夯实率%</th><th>达标人数</th><th>未达标人数</th><th>月成本</th></tr></thead><tbody>`;
   LAYER_DEFS.forEach(ld=>{
-    const d=lc[ld.key];const atMin=+(d.count*d.layerRate/100).toFixed(1);const below=+(d.count-atMin).toFixed(1);const mc=calcMonthlyCost(d.base,st.province)*d.count;
-    html+=`<tr class="${d.layerRate<100?'highlight-row':''}">
+    const d=lc[ld.key];
+    if(d.count === 0){
+      html+=`<tr style="color:var(--text-light)">
+      <td><span class="tag ${ld.tagClass}">${ld.label}</span></td><td>0</td><td>-</td>
+      <td>-</td><td>-</td><td>-</td><td>-</td></tr>`;
+    } else {
+      const atMin=+(d.count*d.layerRate/100).toFixed(1);const below=+(d.count-atMin).toFixed(1);const mc=calcMonthlyCost(d.base,st.province)*d.count;
+      html+=`<tr class="${d.layerRate<100?'highlight-row':''}">
       <td><span class="tag ${ld.tagClass}">${ld.label}</span></td><td>${d.count}</td><td>¥${d.base}</td>
       <td style="color:${d.layerRate>=100?'var(--success)':'var(--warning)'};font-weight:600">${d.layerRate}%</td>
       <td style="color:var(--success)">${atMin}</td><td style="color:${below>0?'var(--danger)':'var(--success)'}">${below}</td>
       <td>¥${fmt(mc)}</td></tr>`;
+    }
   });
   html+=`</tbody></table></div></div>`;
 
@@ -1339,18 +1345,19 @@ function renderLayerOverview(stName, st, lc){
 
   // Custom adjustment
   html+=`<div class="card"><h3>自定义调整方案</h3>
-    <p style="font-size:13px;color:var(--text-light);margin-bottom:12px">手动输入各层级目标夯实率，计算成本</p>
+    <p style="font-size:13px;color:var(--text-light);margin-bottom:12px">手动输入各层级目标夯实率，计算成本（默认目标：2026年国家要求70%）</p>
     <div class="tbl-wrap"><table><thead><tr><th>层级</th><th>当前%</th><th>目标%</th><th>调整人数</th><th>月增成本</th></tr></thead><tbody>`;
   LAYER_DEFS.forEach(ld=>{
     const d=lc[ld.key];const sk=stName;
     if(!layerAdjustState[sk])layerAdjustState[sk]={};
-    if(!layerAdjustState[sk][ld.key])layerAdjustState[sk][ld.key]=d.layerRate;
+    // 默认目标为70%（2026年国家要求），人数为0的层级显示为0
+    if(!layerAdjustState[sk][ld.key])layerAdjustState[sk][ld.key]= d.count > 0 ? 70 : 0;
     const tL=layerAdjustState[sk][ld.key];const diff=tL-d.layerRate;
     const pm=diff>0?Math.ceil(d.count*diff/100):0;const ci=pm*(st.minBase*0.6)*unitRate/100;
-    html+=`<tr><td><span class="tag ${ld.tagClass}">${ld.label}</span></td><td>${d.layerRate}%</td>
+    html+=`<tr><td><span class="tag ${ld.tagClass}">${ld.label}</span></td><td>${d.count>0?d.layerRate+'%':'-'}</td>
       <td><input type="number" value="${tL}" min="0" max="100" step="0.1" style="width:70px" onchange="updateCustomTarget('${stName}','${ld.key}',+this.value)"></td>
-      <td style="color:${pm>0?'var(--danger)':'var(--success)'}">${pm>0?'+':''}${pm}</td>
-      <td style="color:${ci>0?'var(--danger)':'var(--success)'}">¥${fmt(ci)}</td></tr>`;
+      <td style="color:${pm>0?'var(--danger)':'var(--success)'}">${d.count>0?(pm>0?'+':''+pm):'-'}</td>
+      <td style="color:${ci>0?'var(--danger)':'var(--success)'}">${d.count>0?'¥'+fmt(ci):'-'}</td></tr>`;
   });
   let cm=0;
   LAYER_DEFS.forEach(ld=>{const d=lc[ld.key];const tL=(layerAdjustState[stName]&&layerAdjustState[stName][ld.key])||d.layerRate;const diff=tL-d.layerRate;const pm=diff>0?Math.ceil(d.count*diff/100):0;cm+=pm*(st.minBase*0.6)*unitRate/100;});
@@ -1755,21 +1762,19 @@ function renderCompany(){
   // 总览区域
   html += `<div class="card"><h3>📊 成本 vs 预算 总览${isStation ? ' — '+currentUser.station+'浆站' : ' — 全公司'}</h3>
     <div class="stats-row">
-      <div class="stat-card"><div class="num">¥${fmt(totalCost)}</div><div class="label">年度社保成本（测算）</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--warning)">¥${fmt(totalYtdActual)}</div><div class="label">年度累计成本（1-7月实际）</div></div>
       <div class="stat-card"><div class="num" style="color:var(--primary)">¥${fmt(totalBudget)}</div><div class="label">年度预算总额</div></div>
-      <div class="stat-card ${totalUsageRate>100?'red':(totalUsageRate>90?'orange':'green')}"><div class="num">${totalUsageRate.toFixed(1)}%</div><div class="label">测算使用率</div></div>
-      <div class="stat-card"><div class="num" style="color:var(--warning)">¥${fmt(totalYtdActual)}</div><div class="label">1-7月实际社保费</div></div>
       <div class="stat-card ${totalExecRate>58.3?'red':'green'}"><div class="num">${totalExecRate.toFixed(1)}%</div><div class="label">预算执行率</div></div>
     </div>
     <div style="margin-top:12px">
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-        <span>预算使用进度</span><span>${totalUsageRate.toFixed(1)}%</span>
+        <span>预算执行进度（时间进度58.3%）</span><span>${totalExecRate.toFixed(1)}%</span>
       </div>
       <div class="progress-bar" style="height:14px">
-        <div class="fill" style="width:${Math.min(100,totalUsageRate)}%;background:${totalUsageRate>100?'var(--danger)':(totalUsageRate>90?'var(--warning)':'var(--success)')}"></div>
+        <div class="fill" style="width:${Math.min(100,totalExecRate)}%;background:${totalExecRate>58.3?'var(--danger)':(totalExecRate>40?'var(--warning)':'var(--success)')}"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-light);margin-top:4px">
-        <span>成本：¥${fmt(totalCost)}</span><span>预算：¥${fmt(totalBudget)}</span>
+        <span>累计成本：¥${fmt(totalYtdActual)}</span><span>预算：¥${fmt(totalBudget)}</span>
       </div>
     </div>
     <div style="margin-top:16px"><canvas id="chartCompanyOverview" height="100"></canvas></div>
@@ -1781,54 +1786,48 @@ function renderCompany(){
       <p style="font-size:13px;color:var(--text-light);margin-bottom:12px">可手动设置各浆站年度预算。修改后自动保存，成本vs预算看板实时更新。</p>
       <button class="btn btn-outline btn-sm" onclick="resetBudgets()">↩ 恢复默认预算</button>
       <div class="tbl-wrap" style="margin-top:12px"><table>
-        <thead><tr><th>浆站</th><th>省份</th><th>在岗人数</th><th>参考成本</th><th>年度预算</th><th>使用率</th></tr></thead><tbody>`;
+        <thead><tr><th>浆站</th><th>省份</th><th>在岗人数</th><th>年度累计成本</th><th>年度预算</th><th>执行率</th></tr></thead><tbody>`;
     STATIONS.forEach(s=>{
-      const cost = getStationAnnualCost(s);
+      const ytdActual = (REAL_COST_DATA && REAL_COST_DATA[s.name]) ? REAL_COST_DATA[s.name].actual_ytd : 0;
       const budget = budgets[s.name] || 0;
-      const usage = budget>0?(cost/budget*100):0;
+      const ytdBudget = (REAL_COST_DATA && REAL_COST_DATA[s.name]) ? REAL_COST_DATA[s.name].budget_annual : 0;
+      const execRate = ytdBudget > 0 ? (ytdActual / ytdBudget * 100) : 0;
       html+=`<tr><td style="font-weight:600">${s.name}浆站</td><td>${s.province}</td><td>${STAFF_COUNTS[s.name]||'-'}</td>
-        <td>¥${fmt(cost)}</td>
+        <td style="font-weight:600;color:var(--warning)">¥${fmt(ytdActual)}</td>
         <td><input type="number" value="${budget}" style="width:110px" onchange="updateBudget('${s.name}',+this.value)"></td>
-        <td style="color:${usage>100?'var(--danger)':(usage>90?'var(--warning)':'var(--success)')};font-weight:600">${usage.toFixed(1)}%</td></tr>`;
+        <td style="color:${execRate>58.3?'var(--danger)':(execRate>40?'var(--warning)':'var(--success)')};font-weight:600">${execRate.toFixed(1)}%</td></tr>`;
     });
     html+=`</tbody></table></div></div>`;
   }
 
   // 各浆站明细
-  html += `<div class="card"><h3>${isStation?'':'各浆站'}成本 vs 预算 明细（按使用率排序）</h3>
+  html += `<div class="card"><h3>${isStation?'':'各浆站'}成本 vs 预算 明细（按执行率排序）</h3>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>浆站</th><th>省份</th><th>人数</th><th>夯实率</th><th>年度成本</th><th>年度预算</th><th>使用率</th><th>差额</th><th>1-7月实际</th><th>预算执行率</th><th>状态</th></tr></thead><tbody>`;
-  // 按使用率从高到低排序（超支站优先展示）
-  stationData.sort((a,b)=> b.usageRate - a.usageRate);
+      <thead><tr><th>浆站</th><th>省份</th><th>人数</th><th>夯实率</th><th>年度累计成本</th><th>年度预算</th><th>执行率</th><th>差额</th><th>状态</th></tr></thead><tbody>`;
+  // 按执行率从高到低排序（超支站优先展示）
+  stationData.sort((a,b)=> b.execRate - a.execRate);
   let totalYtdActualTbl = 0;
   stationData.forEach(d=>{
     const s = d.station;
-    const diff = d.budget - d.cost;
-    const statusClass = d.usageRate>100?'badge-err':(d.usageRate>90?'badge-warn':'badge-ok');
-    const statusText = d.usageRate>100?'超支':(d.usageRate>90?'接近上限':'正常');
-    const ytdStr = d.ytdActual > 0 ? '¥'+fmt(d.ytdActual) : '-';
-    const execStr = d.ytdBudget > 0 ? d.execRate.toFixed(1)+'%' : '-';
-    const execColor = d.ytdBudget > 0 ? (d.execRate > 58.3 ? 'var(--danger)' : 'var(--success)') : 'var(--text-light)';
+    const diff = d.budget - d.ytdActual;
+    const statusClass = d.execRate>58.3?'badge-err':(d.execRate>50?'badge-warn':'badge-ok');
+    const statusText = d.execRate>58.3?'超进度':(d.execRate>50?'接近进度':'正常');
     totalYtdActualTbl += d.ytdActual;
     html+=`<tr>
       <td style="font-weight:600">${s.name}浆站</td><td>${s.province}</td><td>${STAFF_COUNTS[s.name]||'-'}</td>
       <td>${s.actual}%</td>
-      <td>¥${fmt(d.cost)}</td><td>¥${fmt(d.budget)}</td>
-      <td style="font-weight:700;color:${d.usageRate>100?'var(--danger)':(d.usageRate>90?'var(--warning)':'var(--success)')}">${d.usageRate.toFixed(1)}%</td>
+      <td style="font-weight:600;color:var(--warning)">¥${fmt(d.ytdActual)}</td><td>¥${fmt(d.budget)}</td>
+      <td style="font-weight:700;color:${d.execRate>58.3?'var(--danger)':(d.execRate>50?'var(--warning)':'var(--success)')}">${d.execRate.toFixed(1)}%</td>
       <td style="color:${diff>=0?'var(--success)':'var(--danger)'}">¥${diff>=0?'':'-'}${fmt(Math.abs(diff))}</td>
-      <td style="font-weight:600;color:var(--warning)">${ytdStr}</td>
-      <td style="font-weight:700;color:${execColor}">${execStr}</td>
       <td><span class="badge ${statusClass}">${statusText}</span></td></tr>`;
   });
   // 合计行
   const totalExecRateTbl = totalBudget > 0 ? (totalYtdActualTbl / totalBudget * 100) : 0;
   html+=`<tr style="font-weight:700;background:#f0f7ff">
     <td>合计</td><td></td><td>${stationList.reduce((a,s)=>a+(STAFF_COUNTS[s.name]||0),0)}</td><td></td>
-    <td>¥${fmt(totalCost)}</td><td>¥${fmt(totalBudget)}</td>
-    <td style="color:${totalUsageRate>100?'var(--danger)':'var(--success)'}">${totalUsageRate.toFixed(1)}%</td>
-    <td style="color:${totalBudget-totalCost>=0?'var(--success)':'var(--danger)'}">¥${fmt(Math.abs(totalBudget-totalCost))}</td>
-    <td style="color:var(--warning)">¥${fmt(totalYtdActualTbl)}</td>
+    <td style="color:var(--warning)">¥${fmt(totalYtdActualTbl)}</td><td>¥${fmt(totalBudget)}</td>
     <td style="color:${totalExecRateTbl>58.3?'var(--danger)':'var(--success)'}">${totalExecRateTbl.toFixed(1)}%</td>
+    <td style="color:${totalBudget-totalYtdActualTbl>=0?'var(--success)':'var(--danger)'}">¥${fmt(Math.abs(totalBudget-totalYtdActualTbl))}</td>
     <td></td></tr>`;
   html+=`</tbody></table></div>
     <div style="margin-top:16px"><canvas id="chartCompanyDetail" height="300"></canvas></div>
@@ -1838,10 +1837,10 @@ function renderCompany(){
   html += `<div class="card" style="background:#f8fafc">
     <h3>📖 看板说明</h3>
     <div style="font-size:13px;color:var(--text);line-height:1.8">
-      <p><b>年度社保成本</b> = 在岗人数 × 当地基数 × 单位费率合计 × 12个月 × (夯实率/100)</p>
-      <p><b>预算使用率</b> = 实际成本 ÷ 年度预算 × 100%。超过100%表示超支。</p>
-      <p><b>动态联动</b>：在分层测算、费率速查等页面调整基数或比例后，此处的成本数据会自动同步更新。</p>
-      <p><b>参考预算</b>：默认按全员70%夯实率估算。管理员可在上方"预算设置"中手动调整各站预算。</p>
+      <p><b>年度累计成本</b> = 1-7月实际发生的社会保险费（来源：7月成本汇总表）</p>
+      <p><b>预算执行率</b> = 年度累计成本 ÷ 年度预算 × 100%。超过58.3%（7/12时间进度）表示超进度。</p>
+      <p><b>差额</b> = 年度预算 - 年度累计成本。正数为预算剩余，负数为超支。</p>
+      <p><b>参考预算</b>：默认取自飞书成本汇总表的年度计划成本。管理员可在上方"预算设置"中手动调整。</p>
     </div>
   </div>`;
 
@@ -1853,8 +1852,8 @@ function renderCompany(){
     const ctxO=document.getElementById('chartCompanyOverview');
     if(ctxO){
       chartInstances['companyOverview']=new Chart(ctxO,{type:'bar',
-        data:{labels:['年度成本','年度预算'],
-          datasets:[{data:[totalCost,totalBudget],backgroundColor:['rgba(59,130,246,0.7)','rgba(16,185,129,0.7)'],borderWidth:0,borderRadius:6}]},
+        data:{labels:['年度累计成本','年度预算'],
+          datasets:[{data:[totalYtdActual,totalBudget],backgroundColor:['rgba(245,158,11,0.7)','rgba(16,185,129,0.7)'],borderWidth:0,borderRadius:6}]},
         options:{responsive:true,plugins:{legend:{display:false},
           tooltip:{callbacks:{label:function(c){return '¥'+fmt(c.raw)}}}},
           scales:{y:{beginAtZero:true,ticks:{callback:function(v){return '¥'+(v>=10000?(v/10000).toFixed(1)+'万':v)}}},x:{grid:{display:false}}}}
@@ -1864,16 +1863,14 @@ function renderCompany(){
     const ctxD=document.getElementById('chartCompanyDetail');
     if(ctxD){
       const labels = stationData.map(d=>d.station.name);
-      const costs = stationData.map(d=>d.cost);
+      const ytdArr = stationData.map(d=>d.ytdActual);
       const budgetArr = stationData.map(d=>d.budget);
       const chartH2 = Math.max(200, stationData.length * 40);
       ctxD.parentElement.style.height = chartH2 + 'px';
-      const ytdArr = stationData.map(d=>d.ytdActual);
       chartInstances['companyDetail']=new Chart(ctxD,{type:'bar',
         data:{labels,datasets:[
-          {label:'年度成本',data:costs,backgroundColor:'rgba(59,130,246,0.6)',borderRadius:3},
-          {label:'年度预算',data:budgetArr,backgroundColor:'rgba(16,185,129,0.4)',borderRadius:3,borderColor:'rgba(16,185,129,0.8)',borderWidth:1},
-          {label:'1-7月实际',data:ytdArr,backgroundColor:'rgba(245,158,11,0.5)',borderRadius:3,borderColor:'rgba(245,158,11,0.8)',borderWidth:1}
+          {label:'年度累计成本',data:ytdArr,backgroundColor:'rgba(245,158,11,0.6)',borderRadius:3},
+          {label:'年度预算',data:budgetArr,backgroundColor:'rgba(16,185,129,0.4)',borderRadius:3,borderColor:'rgba(16,185,129,0.8)',borderWidth:1}
         ]},
         options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
           plugins:{legend:{position:'top'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': ¥'+fmt(c.raw)}}}},
@@ -2110,7 +2107,7 @@ function renderSuggest(){
 
     let totalPeopleAll = 0, totalCostMonthlyAll = 0, newlyCompliantCount = 0;
 
-    // Helper: generate layer adjustment table for a station
+    // Helper: generate optimal multi-layer adjustment table for a station
     function buildLayerTable(sName, sInfo, peopleNeed){
       var lc = layerConfigs[sName];
       if(!lc){
@@ -2119,46 +2116,64 @@ function renderSuggest(){
         var _m = Math.max(1, Math.round(_t * 0.15));
         var _d = Math.max(1, Math.round(_t * 0.25));
         var _e = _t - _g - _m - _d;
-        lc = {gm:{count:_g},mgmt:{count:_m},mid:{count:_d},emp:{count:_e>0?_e:1}};
+        lc = {gm:{count:_g,base:sInfo.base},mgmt:{count:_m,base:sInfo.base},mid:{count:_d,base:sInfo.base},emp:{count:_e>0?_e:1,base:sInfo.base}};
       }
+      var ur = getUnitRate(sInfo.province) / 100;
       var lays = [
-        {key:'emp',label:'员工级',count:lc.emp.count},
-        {key:'mid',label:'中层级',count:lc.mid.count},
-        {key:'mgmt',label:'经营层',count:lc.mgmt.count},
-        {key:'gm',label:'总经理级',count:lc.gm.count}
+        {key:'emp',label:'员工级',count:lc.emp.count,base:lc.emp.base},
+        {key:'mid',label:'中层级',count:lc.mid.count,base:lc.mid.base},
+        {key:'mgmt',label:'经营层',count:lc.mgmt.count,base:lc.mgmt.base},
+        {key:'gm',label:'总经理级',count:lc.gm.count,base:lc.gm.base}
       ];
+      // 计算每个层级调整1人至最低基数的月增成本，按成本从低到高排序
+      lays.forEach(function(la){
+        la.costPerPerson = la.count > 0 ? (sInfo.minBase - la.base) * ur : Infinity;
+        la.adjust = 0;
+      });
+      // 成本最优分配：优先调整成本增量低的层级
       var rem = peopleNeed;
-      lays.forEach(function(la){ la.adjust = 0; });
-      for(var i=0; i<lays.length && rem>0; i++){
-        var can = Math.min(lays[i].count, rem);
-        lays[i].adjust = can;
+      var sortedLays = lays.filter(function(l){ return l.count > 0 && l.base < sInfo.minBase; })
+                          .sort(function(a,b){ return a.costPerPerson - b.costPerPerson; });
+      for(var i=0; i<sortedLays.length && rem>0; i++){
+        var can = Math.min(sortedLays[i].count, rem);
+        sortedLays[i].adjust = can;
         rem -= can;
       }
-      // 估算低于最低基数人员的平均当前基数（按最低基数的60%估算）
-      var cb = +(sInfo.minBase * 0.6).toFixed(2);
-      var ur = getUnitRate(sInfo.province) / 100;
+      // 如果还有剩余，说明低基层级人数不够，需要部分调整
+      if(rem > 0){
+        var allLays = lays.filter(function(l){ return l.count > 0; })
+                          .sort(function(a,b){ return a.costPerPerson - b.costPerPerson; });
+        for(var j=0; j<allLays.length && rem>0; j++){
+          var extra = Math.min(allLays[j].count - allLays[j].adjust, rem);
+          allLays[j].adjust += extra;
+          rem -= extra;
+        }
+      }
+      // 计算月增成本
       var mc = 0;
       lays.forEach(function(la){
-        la.monthInc = la.adjust * (sInfo.minBase - cb) * ur;
+        la.monthInc = la.adjust * (sInfo.minBase - la.base) * ur;
         mc += la.monthInc;
       });
       var totalAdj = 0;
       var tb = '<div class="tbl-wrap"><table style="font-size:12px;margin-top:8px">';
-      tb += '<thead><tr><th>层级</th><th>人数</th><th>需调</th><th>基数→调至</th><th>月增成本</th></tr></thead><tbody>';
+      tb += '<thead><tr><th>层级</th><th>人数</th><th>当前基数</th><th>需调整</th><th>调至基数</th><th>月增成本</th></tr></thead><tbody>';
       lays.forEach(function(la){
         totalAdj += la.adjust;
-        var baseStr = la.adjust > 0 ? '¥'+fmt(cb)+'→¥'+fmt(sInfo.minBase) : '-';
+        var baseStr = la.adjust > 0 ? '¥'+fmt(la.base)+'→¥'+fmt(sInfo.minBase) : '¥'+fmt(la.base);
         var mStr = la.adjust > 0 ? '¥'+fmt(la.monthInc) : '-';
         tb += '<tr'+(la.adjust>0?' style="background:#fff7ed"':'')+'>';
         tb += '<td style="font-weight:600">'+la.label+'</td>';
         tb += '<td>'+la.count+'</td>';
+        tb += '<td>¥'+fmt(la.base)+'</td>';
         tb += '<td style="font-weight:600;color:'+(la.adjust>0?'var(--danger)':'var(--text-light)')+'">'+la.adjust+'</td>';
         tb += '<td>'+baseStr+'</td>';
         tb += '<td style="font-weight:600">'+mStr+'</td>';
         tb += '</tr>';
       });
-      tb += '<tr style="font-weight:700;background:#f0f7ff"><td>合计</td><td>'+(lays.reduce(function(a,l){return a+l.count},0))+'</td><td style="color:var(--danger)">'+totalAdj+'</td><td></td><td style="color:var(--danger)">¥'+fmt(mc)+'/月</td></tr>';
+      tb += '<tr style="font-weight:700;background:#f0f7ff"><td>合计</td><td>'+(lays.reduce(function(a,l){return a+l.count},0))+'</td><td></td><td style="color:var(--danger)">'+totalAdj+'</td><td></td><td style="color:var(--danger)">¥'+fmt(mc)+'/月</td></tr>';
       tb += '</tbody></table></div>';
+      tb += '<div style="margin-top:6px;font-size:11px;color:var(--text-light)">💡 优化策略：优先调整成本增量最低的层级，实现成本最优方案</div>';
       return {html: tb, monthlyCost: mc, totalAdj: totalAdj};
     }
 
