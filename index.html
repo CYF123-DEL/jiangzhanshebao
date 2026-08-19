@@ -1,0 +1,2557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>浆站社保成本测算系统V8</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#333;font-size:14px;line-height:1.6}
+:root{--primary:#3b82f6;--primary-dark:#2563eb;--primary-light:#dbeafe;--bg:#f0f2f5;--card:#fff;--border:#e5e7eb;--text:#333;--text-light:#6b7280;--danger:#ef4444;--warning:#f59e0b;--success:#10b981;--shadow:0 1px 3px rgba(0,0,0,.1)}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e0e7ef 0%,#f0f2f5 100%)}
+.login-card{background:#fff;border-radius:12px;padding:40px 32px;width:90%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,.08);text-align:center}
+.login-card h1{font-size:20px;color:#1e293b;margin-bottom:6px}
+.login-card p{color:#6b7280;font-size:13px;margin-bottom:28px}
+.login-card input{width:100%;padding:12px 16px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;margin-bottom:14px;outline:none;transition:border .2s}
+.login-card input:focus{border-color:var(--primary)}
+.login-card button{width:100%;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;transition:background .2s}
+.login-card button:hover{background:var(--primary-dark)}
+.login-err{color:var(--danger);font-size:13px;margin-top:10px;min-height:20px}
+.main-wrap{display:none;min-height:100vh}
+.top-bar{background:#fff;border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.top-bar h2{font-size:15px;color:#1e293b;font-weight:700}
+.top-bar .subtitle{font-size:11px;color:var(--text-light);font-weight:400;margin-left:8px}
+.top-bar .user-info{font-size:13px;color:var(--text-light)}
+.top-bar .logout-btn{font-size:12px;color:var(--danger);cursor:pointer;margin-left:12px;border:1px solid var(--danger);padding:2px 10px;border-radius:4px;background:#fff}
+.tab-bar{display:flex;overflow-x:auto;background:#fff;border-bottom:1px solid var(--border);-webkit-overflow-scrolling:touch;padding:0 8px}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{flex-shrink:0;padding:12px 16px;font-size:13px;color:var(--text-light);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+.tab-content{padding:16px;max-width:1200px;margin:0 auto}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.card{background:#fff;border-radius:10px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card h3{font-size:15px;font-weight:600;color:#1e293b;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.stat-card{background:#fff;border-radius:10px;padding:16px;text-align:center;box-shadow:var(--shadow)}
+.stat-card .num{font-size:28px;font-weight:700;color:var(--primary)}
+.stat-card .label{font-size:12px;color:var(--text-light);margin-top:4px}
+.stat-card.red .num{color:var(--danger)}
+.stat-card.green .num{color:var(--success)}
+.stat-card.orange .num{color:var(--warning)}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:10px 8px;text-align:center;border-bottom:1px solid var(--border)}
+th{background:#f8fafc;color:var(--text-light);font-weight:600;font-size:12px;white-space:nowrap}
+td{color:var(--text)}
+input[type=number],input[type=text],select{padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;outline:none;width:100%;min-width:80px}
+input:focus,select:focus{border-color:var(--primary)}
+input[type=number]{text-align:right}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#dc2626}
+.btn-sm{padding:6px 14px;font-size:12px}
+.btn-outline{background:#fff;color:var(--primary);border:1px solid var(--primary)}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{background:#059669}
+.chart-box{position:relative;width:100%;margin:16px 0}
+.chart-box.tall{min-height:700px}
+.badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:600}
+.badge-ok{background:#d1fae5;color:#065f46}
+.badge-warn{background:#fef3c7;color:#92400e}
+.badge-err{background:#fee2e2;color:#991b1b}
+.layer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:16px}
+.layer-card{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:16px}
+.layer-card h4{font-size:14px;font-weight:600;color:#1e293b;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.layer-card .tag{font-size:11px;padding:2px 8px;border-radius:4px;font-weight:600}
+.tag-gm{background:#dbeafe;color:#1e40af}
+.tag-mgmt{background:#e0e7ff;color:#3730a3}
+.tag-mid{background:#fef3c7;color:#92400e}
+.tag-emp{background:#f3f4f6;color:#374151}
+.scenario-card{background:#fff;border:2px solid var(--border);border-radius:10px;padding:18px;cursor:pointer;transition:all .2s}
+.scenario-card:hover{border-color:var(--primary);box-shadow:0 2px 8px rgba(59,130,246,.15)}
+.scenario-card.recommended{border-color:var(--primary);background:#f0f7ff}
+.scenario-card h4{font-size:14px;font-weight:600;margin-bottom:8px;color:#1e293b}
+.scenario-card .cost{font-size:22px;font-weight:700;color:var(--primary)}
+.scenario-card .detail{font-size:12px;color:var(--text-light);margin-top:6px}
+.progress-bar{height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-top:4px}
+.progress-bar .fill{height:100%;border-radius:4px;transition:width .3s}
+.policy-card{background:linear-gradient(135deg,#f0f7ff 0%,#e8f0fe 100%);border:1px solid #bfdbfe;border-radius:10px;padding:20px;margin-bottom:16px}
+.policy-card h3{color:#1e40af;border-bottom-color:#bfdbfe}
+.policy-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600}
+.policy-badge.national{background:#dbeafe;color:#1e40af}
+.policy-badge.local{background:#fef3c7;color:#92400e}
+.policy-badge.diff{background:#fee2e2;color:#991b1b}
+.history-item{padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}
+.history-item:last-child{border-bottom:none}
+.highlight-row{background:#f0f7ff!important}
+.timeline{display:flex;gap:0;margin:20px 0;overflow-x:auto;padding-bottom:10px}
+.timeline-item{flex:1;min-width:140px;text-align:center;position:relative;padding:0 8px}
+.timeline-item::before{content:'';position:absolute;top:16px;left:0;right:0;height:3px;background:#e5e7eb;z-index:0}
+.timeline-item:first-child::before{left:50%}
+.timeline-item:last-child::before{right:50%}
+.timeline-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:13px;font-weight:700;color:#fff;position:relative;z-index:1}
+.timeline-dot.current{background:var(--primary);box-shadow:0 0 0 4px rgba(59,130,246,.2)}
+.timeline-dot.future{background:#94a3b8}
+.timeline-dot.done{background:var(--success)}
+.timeline-label{font-size:12px;font-weight:600;color:#1e293b;margin-bottom:2px}
+.timeline-desc{font-size:11px;color:var(--text-light)}
+.case-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:14px;transition:box-shadow .2s}
+.case-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.case-card h4{font-size:14px;font-weight:600;color:#1e293b;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.case-card .case-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--text-light);margin-bottom:10px}
+.case-card .case-body{font-size:13px;color:var(--text);line-height:1.8}
+.case-card .case-result{background:#f0f7ff;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:13px}
+.std-card{background:#fff;border-left:4px solid var(--primary);border-radius:0 10px 10px 0;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.std-card h4{font-size:14px;font-weight:600;color:#1e293b;margin-bottom:6px}
+.std-card p{font-size:13px;color:var(--text);line-height:1.7}
+.sub-tab-bar{display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)}
+.sub-tab-btn{padding:10px 18px;font-size:13px;color:var(--text-light);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;font-weight:500}
+.sub-tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+.sub-panel{display:none}.sub-panel.active{display:block}
+.single-calc-result{background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:18px;margin-top:16px}
+.single-calc-result h4{font-size:14px;font-weight:600;color:#1e40af;margin-bottom:12px}
+.calc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.calc-item{background:#fff;border-radius:8px;padding:12px;text-align:center;border:1px solid var(--border)}
+.calc-item .val{font-size:20px;font-weight:700;color:var(--primary)}
+.calc-item .lbl{font-size:11px;color:var(--text-light);margin-top:4px}
+@media(max-width:640px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .card{padding:14px}
+  .tab-content{padding:12px 8px}
+  table{font-size:12px}
+  th,td{padding:8px 6px}
+  .login-card{padding:32px 20px}
+  .layer-grid{grid-template-columns:1fr}
+  .timeline-item{min-width:110px}
+  .calc-grid{grid-template-columns:repeat(2,1fr)}
+  .qv-chart-grid{grid-template-columns:1fr !important}
+}
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:999;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal-box{background:#fff;border-radius:12px;padding:28px 24px;width:85%;max-width:400px;text-align:center;max-height:80vh;overflow-y:auto}
+.modal-box p{margin-bottom:20px;font-size:15px;color:#1e293b}
+.modal-box .btns{display:flex;gap:12px;justify-content:center}
+.hidden{display:none!important}
+.station-quick-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:12px;cursor:pointer;transition:all 0.2s;color:var(--text);white-space:nowrap}
+.station-quick-btn:hover{background:#f0f7ff;border-color:var(--primary)}
+.station-quick-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.gauge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px;padding:8px 0}
+.gauge-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 10px 10px;text-align:center;cursor:pointer;transition:all 0.25s;position:relative}
+.gauge-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,0.08);border-color:var(--primary)}
+.gauge-card.selected{border-color:var(--primary);box-shadow:0 0 0 2px rgba(59,130,246,0.2)}
+.gauge-svg{width:100px;height:62px;margin:0 auto 6px}
+.gauge-card .st-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.gauge-card .st-rate{font-size:18px;font-weight:700}
+.gauge-card .st-status{font-size:10px;margin-top:4px}
+.gauge-card .st-budget{font-size:10px;color:var(--text-light);margin-top:2px}
+</style>
+</head>
+<body>
+
+<div id="customModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:90%;max-width:360px;box-shadow:0 4px 24px rgba(0,0,0,0.15)">
+    <h3 id="modalTitle" style="font-size:16px;margin-bottom:16px;color:#1e293b">设置</h3>
+    <div id="modalContent"></div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button onclick="closeCustomModal()" style="flex:1;padding:10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font-size:14px;cursor:pointer">取消</button>
+      <button id="modalConfirmBtn" style="flex:1;padding:10px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:14px;font-weight:600;cursor:pointer">确定</button>
+    </div>
+  </div>
+</div>
+
+<div id="loginPage" class="login-wrap">
+  <div class="login-card">
+    <h1>浆站社保成本测算</h1>
+    <p>成本对比 · 实时测算 · 阶段规划</p>
+    <input type="text" id="loginName" placeholder="姓名" autocomplete="name" spellcheck="false">
+    <input type="text" id="loginPhone" placeholder="手机号" autocomplete="off" inputmode="numeric" maxlength="11" spellcheck="false">
+    <input type="password" id="loginPwd" placeholder="密码" autocomplete="new-password">
+    <button onclick="doLogin()">登 录</button>
+    <div style="margin-top:8px;font-size:12px;color:#999;cursor:pointer;text-decoration:underline" onclick="clearLoginForm()">清除重填</div>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<div id="mainPage" class="main-wrap">
+  <div class="top-bar">
+    <div style="display:flex;align-items:baseline"><h2>浆站社保成本测算</h2><span class="subtitle">成本对比 · 实时测算 · 阶段规划</span></div>
+    <div style="display:flex;align-items:center">
+      <span class="user-info" id="welcomeText"></span>
+      <span class="logout-btn" onclick="doLogout()">退出</span>
+    </div>
+  </div>
+  <div class="tab-bar" id="tabBar"></div>
+  <div class="tab-content">
+    <div class="tab-panel" id="panel-overview"></div>
+    <div class="tab-panel" id="panel-layer"></div>
+    <div class="tab-panel" id="panel-rate"></div>
+    <div class="tab-panel" id="panel-company"></div>
+    <div class="tab-panel" id="panel-suggest"></div>
+    <div class="tab-panel" id="panel-case"></div>
+    <div class="tab-panel" id="panel-data"></div>
+    <div class="tab-panel" id="panel-settings"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="confirmModal">
+  <div class="modal-box">
+    <p id="confirmMsg">确定要清除所有数据吗？</p>
+    <div class="btns">
+      <button class="btn btn-danger" id="confirmOk">确定</button>
+      <button class="btn btn-outline" onclick="hideModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ DATA ============
+const STAFF_COUNTS = {
+  '定安':28,'广德':60,'怀集':59,'怀远':44,'泾县':32,'乐昌':51,'灵璧':34,'龙游':23,'庐江':37,
+  '凤台':47,'南陵':47,'商都':26,'舒城':61,'宿松':38,'翁旗':32,'五河':51,'叶集':54,'扎旗':39,'左旗':38,'丰镇':26
+};
+// 飞书「浆站各层级缴费基数」抓取数据（2026-08-18更新）
+const DEFAULT_LAYER_DATA = {
+  '商都':{gm:{count:0,base:'default'},mgmt:{count:4,base:12519.08},mid:{count:3,base:7364.31},emp:{count:19,base:6453.69}},
+  '左旗':{gm:{count:0,base:'default'},mgmt:{count:4,base:4907},mid:{count:7,base:4907},emp:{count:27,base:4907}},
+  '翁旗':{gm:{count:0,base:'default'},mgmt:{count:4,base:7513.25},mid:{count:4,base:6053.5},emp:{count:24,base:5678.33}},
+  '扎旗':{gm:{count:1,base:7106},mgmt:{count:4,base:7193.2},mid:{count:5,base:7829.76},emp:{count:29,base:5314.72}},
+  '丰镇':{gm:{count:0,base:'default'},mgmt:{count:6,base:4907},mid:{count:0,base:'default'},emp:{count:20,base:4907}},
+  '灵璧':{gm:{count:1,base:17500},mgmt:{count:1,base:10561.9},mid:{count:6,base:7276},emp:{count:26,base:5157.36}},
+  '怀远':{gm:{count:2,base:17000},mgmt:{count:0,base:'default'},mid:{count:7,base:8657},emp:{count:35,base:6676}},
+  '五河':{gm:{count:1,base:11100},mgmt:{count:4,base:9320},mid:{count:9,base:6571},emp:{count:37,base:4685}},
+  '叶集':{gm:{count:4,base:16650.25},mgmt:{count:6,base:10615},mid:{count:1,base:12528.72},emp:{count:43,base:4311}},
+  '凤台':{gm:{count:1,base:10000},mgmt:{count:5,base:7480},mid:{count:4,base:7000},emp:{count:37,base:4311}},
+  '庐江':{gm:{count:1,base:13000},mgmt:{count:3,base:11000},mid:{count:5,base:10000},emp:{count:28,base:4648.65}},
+  '舒城':{gm:{count:2,base:13000},mgmt:{count:5,base:10000},mid:{count:3,base:6000},emp:{count:51,base:4800}},
+  '广德':{gm:{count:2,base:9500},mgmt:{count:3,base:6000},mid:{count:6,base:6000},emp:{count:49,base:4700}},
+  '南陵':{gm:{count:1,base:21000},mgmt:{count:4,base:10125},mid:{count:20,base:7860},emp:{count:22,base:5423}},
+  '泾县':{gm:{count:0,base:'default'},mgmt:{count:6,base:7052},mid:{count:3,base:5437},emp:{count:23,base:4978}},
+  '宿松':{gm:{count:1,base:4311},mgmt:{count:4,base:4311},mid:{count:3,base:4311},emp:{count:30,base:4311}},
+  '怀集':{gm:{count:1,base:4775},mgmt:{count:8,base:4775},mid:{count:17,base:4775},emp:{count:33,base:4775}},
+  '乐昌':{gm:{count:0,base:0},mgmt:{count:0,base:0},mid:{count:15,base:6000},emp:{count:36,base:4775}},
+  '龙游':{gm:{count:2,base:5293},mgmt:{count:0,base:0},mid:{count:4,base:5071},emp:{count:17,base:4986}},
+  '定安':{gm:{count:0,base:'default'},mgmt:{count:0,base:'default'},mid:{count:8,base:11710},emp:{count:20,base:7172}}
+};
+
+// 飞书「2026年7月同路生物下属浆站成本汇总表」抓取数据（2026-08-19更新）
+// actual_ytd: 本年累计社会保险费（1-7月实际发生额）
+// budget_annual: 本年计划成本（总额）
+const REAL_COST_DATA = {
+  '商都':{actual_ytd:359021.61,budget_annual:555106.15},
+  '扎旗':{actual_ytd:571092.71,budget_annual:799344.00},
+  '乐昌':{actual_ytd:533589.30,budget_annual:1117050.00},
+  '宿松':{actual_ytd:333922.52,budget_annual:685405.55},
+  '庐江':{actual_ytd:534199.84,budget_annual:821657.76},
+  '舒城':{actual_ytd:726651.60,budget_annual:1206495.68},
+  '五河':{actual_ytd:623891.04,budget_annual:1161700.00},
+  '广德':{actual_ytd:665294.23,budget_annual:1288224.00},
+  '泾县':{actual_ytd:322509.99,budget_annual:590115.16},
+  '南陵':{actual_ytd:607073.10,budget_annual:812035.54},
+  '翁旗':{actual_ytd:377020.59,budget_annual:663313.76},
+  '怀集':{actual_ytd:520737.92,budget_annual:853503.36},
+  '左旗':{actual_ytd:535978.88,budget_annual:743766.53},
+  '龙游':{actual_ytd:234020.20,budget_annual:496694.40},
+  '叶集':{actual_ytd:674953.93,budget_annual:1148234.40},
+  '凤台':{actual_ytd:457263.48,budget_annual:702744.00},
+  '怀远':{actual_ytd:581190.27,budget_annual:1326326.40},
+  '定安':{actual_ytd:342014.38,budget_annual:569216.00},
+  '灵璧':{actual_ytd:351940.37,budget_annual:886980.00},
+  '丰镇':{actual_ytd:283083.58,budget_annual:0}
+};
+
+
+
+// 各浆站年度预算（管理员可设置）
+function getDefaultBudgets(){
+  var b = {};
+  STATIONS.forEach(function(s){
+    // 优先使用飞书成本汇总表中的实际预算数据
+    if(REAL_COST_DATA && REAL_COST_DATA[s.name] && REAL_COST_DATA[s.name].budget_annual > 0){
+      b[s.name] = Math.round(REAL_COST_DATA[s.name].budget_annual);
+    } else {
+      var people = STAFF_COUNTS[s.name] || 10;
+      var unitRate = getUnitRate(s.province);
+      // 兜底：参考预算 = 人数 × 当地基数 × 单位费率 × 12个月 × 70%夯实率
+      b[s.name] = Math.round(people * s.base * unitRate / 100 * 12 * 0.7);
+    }
+  });
+  return b;
+}
+function getBudgets(){
+  try {
+    var saved = localStorage.getItem('ss7_budgets');
+    if(saved){ var p = JSON.parse(saved); if(p && typeof p === 'object') return p; }
+  } catch(e){}
+  var d = getDefaultBudgets();
+  try { localStorage.setItem('ss7_budgets', JSON.stringify(d)); } catch(e){}
+  return d;
+}
+function saveBudgets(b){ localStorage.setItem('ss7_budgets', JSON.stringify(b)); }
+
+const ROSTER = [
+  {name:'常银峰',phone:'18788869877',role:'admin',station:null},
+  {name:'段书炼',phone:'13339019933',role:'management',station:null},
+  {name:'汪华',phone:'13905653589',role:'management',station:null},
+  {name:'高尚',phone:'13335517382',role:'management',station:null},
+  {name:'许鹏飞',phone:'18686206695',role:'station_manager',station:'商都'},
+  {name:'陈芳',phone:'15248237826',role:'station_manager',station:'扎旗'},
+  {name:'黄存兵',phone:'18128181166',role:'station_manager',station:'乐昌'},
+  {name:'王敬东',phone:'17704827333',role:'station_manager',station:'宿松'},
+  {name:'罗以玖',phone:'18900563388',role:'station_manager',station:'庐江'},
+  {name:'高鹏修',phone:'19966109898',role:'station_manager',station:'舒城'},
+  {name:'高斌',phone:'18196655086',role:'station_manager',station:'五河'},
+  {name:'许牛牛',phone:'18605632511',role:'station_manager',station:'广德'},
+  {name:'徐根生',phone:'15005533128',role:'station_manager',station:'泾县'},
+  {name:'章爱明',phone:'15605697361',role:'station_manager',station:'南陵'},
+  {name:'丁浩',phone:'13696503655',role:'station_manager',station:'翁旗'},
+  {name:'陈海坚',phone:'18655180333',role:'station_manager',station:'怀集'},
+  {name:'韦路路',phone:'18011458539',role:'station_manager',station:'左旗'},
+  {name:'吴兵',phone:'13305568282',role:'station_manager',station:'龙游'},
+  {name:'孙杭飞',phone:'15848077795',role:'station_manager',station:'叶集'},
+  {name:'徐文',phone:'18010811222',role:'station_manager',station:'凤台'},
+  {name:'张伟东',phone:'18904763281',role:'station_manager',station:'怀远'},
+  {name:'王剑',phone:'13365777588',role:'station_manager',station:'定安'},
+  {name:'候村伟',phone:'13317250180',role:'station_manager',station:'灵璧'},
+  {name:'李闯',phone:'15849991588',role:'station_manager',station:'丰镇'}
+];
+
+const DEFAULT_PASSWORD = '123456';
+
+function getPasswords(){
+  try {
+    var p = localStorage.getItem('ss7_passwords');
+    if(p){
+      var parsed = JSON.parse(p);
+      if(parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch(e){ /* localStorage 损坏，重建 */ }
+  var obj = {};
+  for(var i = 0; i < ROSTER.length; i++){
+    obj[String(ROSTER[i].phone)] = DEFAULT_PASSWORD;
+  }
+  try { localStorage.setItem('ss7_passwords', JSON.stringify(obj)); } catch(e){}
+  return obj;
+}
+function savePasswords(obj){ localStorage.setItem('ss7_passwords', JSON.stringify(obj)); }
+
+const STATIONS = [
+  {name:'商都',province:'内蒙古自治区',city:'商都县',base:6744,minBase:6744,actual:126.0,status:'达标'},
+  {name:'扎旗',province:'内蒙古自治区',city:'扎赉特旗',base:6744,minBase:6744,actual:52.0,status:'不达标'},
+  {name:'乐昌',province:'广东',city:'乐昌市',base:4775,minBase:4775,actual:60.0,status:'不达标'},
+  {name:'宿松',province:'安徽',city:'宿松县',base:4311,minBase:4311,actual:65.0,status:'不达标'},
+  {name:'庐江',province:'安徽',city:'庐江县',base:4311,minBase:4311,actual:95.0,status:'达标'},
+  {name:'舒城',province:'安徽',city:'舒城县',base:4311,minBase:4311,actual:52.0,status:'不达标'},
+  {name:'五河',province:'安徽',city:'五河县',base:4311,minBase:4311,actual:63.0,status:'不达标'},
+  {name:'广德',province:'安徽',city:'广德市',base:4311,minBase:4311,actual:41.0,status:'不达标'},
+  {name:'泾县',province:'安徽',city:'泾县',base:4311,minBase:4311,actual:79.47,status:'达标'},
+  {name:'南陵',province:'安徽',city:'南陵县',base:4311,minBase:4311,actual:80.0,status:'达标'},
+  {name:'翁旗',province:'内蒙古自治区',city:'翁牛特旗',base:6744,minBase:6744,actual:103.0,status:'达标'},
+  {name:'怀集',province:'广东',city:'怀集县',base:4775,minBase:4775,actual:66.0,status:'不达标'},
+  {name:'左旗',province:'内蒙古自治区',city:'巴林左旗',base:6744,minBase:6744,actual:75.0,status:'达标'},
+  {name:'龙游',province:'浙江',city:'龙游县',base:5346,minBase:5346,actual:53.0,status:'不达标'},
+  {name:'叶集',province:'安徽',city:'叶集区',base:4311,minBase:4311,actual:66.0,status:'不达标'},
+  {name:'凤台',province:'安徽',city:'凤台县',base:4311,minBase:4311,actual:77.0,status:'达标'},
+  {name:'怀远',province:'安徽',city:'怀远县',base:4311,minBase:4311,actual:72.0,status:'达标'},
+  {name:'定安',province:'海南',city:'定安县',base:4912.8,minBase:4912.8,actual:75.83,status:'达标'},
+  {name:'灵璧',province:'安徽',city:'灵璧县',base:4311,minBase:4311,actual:72.0,status:'达标'},
+  {name:'丰镇',province:'内蒙古自治区',city:'丰镇市',base:6744,minBase:6744,actual:95.2,status:'达标'}
+];
+
+const PHASES = [
+  {year:2026, rate:70, label:'2026年', desc:'当前阶段', status:'current'},
+  {year:2027, rate:80, label:'2027年', desc:'过渡提升期', status:'future'},
+  {year:2028, rate:90, label:'2028年', desc:'基本全覆盖期', status:'future'},
+  {year:2029, rate:100, label:'长期目标', desc:'全面合规', status:'future'}
+];
+
+const LAYER_DEFS = [
+  {key:'gm',label:'总经理级',desc:'副站长、副总经理',tagClass:'tag-gm',ratio:0.10},
+  {key:'mgmt',label:'经营层',desc:'经营层',tagClass:'tag-mgmt',ratio:0.15},
+  {key:'mid',label:'中层级',desc:'科室主任',tagClass:'tag-mid',ratio:0.25},
+  {key:'emp',label:'员工级',desc:'普通员工',tagClass:'tag-emp',ratio:0.50}
+];
+
+const DEFAULT_RATES = {
+  '安徽':{pension_c:16,pension_p:8,medical_c:6.5,medical_p:2,unemp_c:0.5,unemp_p:0.5,injury_c:0.4,injury_p:0},
+  '内蒙古自治区':{pension_c:16,pension_p:8,medical_c:6,medical_p:2,unemp_c:0.5,unemp_p:0.5,injury_c:0.4,injury_p:0},
+  '广东':{pension_c:15,pension_p:8,medical_c:5.5,medical_p:2,unemp_c:0.2,unemp_p:0.2,injury_c:0.4,injury_p:0},
+  '海南':{pension_c:16,pension_p:8,medical_c:8.5,medical_p:2,unemp_c:0.5,unemp_p:0.5,injury_c:0.4,injury_p:0},
+  '浙江':{pension_c:16,pension_p:8,medical_c:9,medical_p:2,unemp_c:0.5,unemp_p:0.5,injury_c:0.4,injury_p:0}
+};
+
+// ============ ARBITRATION CASES (enriched) ============
+const ARBITRATION_CASES = [
+  // === 安徽 ===
+  {province:'安徽',regions:['合肥市','全省'],title:'单位约定社保费由个人承担被仲裁纠正',caseNo:'皖劳人仲字〔2024〕第118号',date:'2024年6月',
+   summary:'2014年7月，彭某入职合肥M公司。2017年9月，公司与彭某签订《目标责任书》，约定社会统筹部分单位承担固定数额900元，之后随年份调整，不足部分由个人承担，从工资中扣除。公司按此方式缴纳社保。2024年6月，彭某认为公司变相克扣工资，申请仲裁要求返还被扣除的社会保险费用差额。',
+   dispute:'用人单位能否通过协议将社保单位缴费部分转嫁给劳动者。',
+   result:'仲裁委审理认为，根据《社会保险法》第十二条规定，用人单位应当按时足额缴纳社会保险费，不得自行减免或规避缴费义务。M公司通过签订《目标责任书》约定由劳动者承担单位缴费部分并从工资中扣除的行为违法。裁决公司返还已从彭某工资中扣除的单位应缴社保费用4万余元。',
+   amount:'4万余元',legal:'《社会保险法》第十二条；《劳动合同法》第二十六条',key:'社保单位缴费部分是法定义务，任何通过协议转嫁给劳动者的约定均无效。'},
+  {province:'安徽',regions:['舒城县','六安市'],title:'公司解散未缴社保，法援律师追讨补缴+经济补偿',caseNo:'舒劳人仲字〔2022〕第38号',date:'2022年3月',
+   summary:'代某于2018年入职舒城县某课外辅导中心有限公司。公司一直未签订书面劳动合同，未购买社保。2021年12月公司即将解散，让员工自行离职。代某被迫离职后向舒城县法律援助中心申请援助。承办律师调查发现，公司未签劳动合同、未缴社保、未付加班费，且公司已成空壳。律师通过追踪股东个人银行流水，证明公司实为夫妻设立的"特殊一人公司"，人、财、物混同。',
+   dispute:'空壳公司逃避社保补缴义务时，能否追究股东连带责任；社保补缴费用能否转化为具体金额主张。',
+   result:'一审法院判决两股东就公司应支付代某的工资、经济补偿等承担连带责任。二审中，承办律师成功将补缴社保费用转化为具体金额，二审法院支持了两股东对社保补缴承担连带责任的观点。最终调解结案，代某获得工资、加班费、经济补偿金及社保补缴。',
+   amount:'工资+补偿金+社保补缴（含5年社保）',legal:'《劳动合同法》第38、46条；《公司法》第63条',key:'即使用人单位成为空壳，劳动者仍可通过追究股东连带责任获得权益保障。社保补缴在提供法院生效文书后可由个人先行补缴。'},
+  {province:'安徽',regions:['宣城市','广德市'],title:'关联公司代缴社保不阻却劳动关系认定',caseNo:'皖宣劳人仲字〔2024〕第227号',date:'2024年6月',
+   summary:'2024年2月17日，何某入职宣城市A农机公司担任农机维修工，未签订书面劳动合同。A公司通过关联公司B农机公司为何某缴纳社保。2024年6月17日何某请假后未再上班。因工资结算争议，何某申请仲裁。A公司辩称何某的社保由B公司缴纳，与A公司不存在劳动关系。法院查明两公司注册地相同、法定代表人和高管完全一致，属关联公司。',
+   dispute:'关联公司代缴社保能否作为否认劳动关系的依据。',
+   result:'法院认定何某与A农机公司存在劳动关系，判决A公司支付何某差额工资13,711元及未签劳动合同二倍工资28,066.5元，合计41,777.5元。法院明确指出：关联公司代缴社保不阻却劳动关系认定，用工单位不能通过关联公司代缴社保规避法定义务。',
+   amount:'41,777.5元',legal:'《劳动合同法》第82条；劳社部发〔2005〕12号',key:'关联公司代缴社保不影响劳动关系认定，用人单位仍需承担未签合同二倍工资等法定责任。'},
+  {province:'安徽',regions:['芜湖市','南陵县'],title:'未签劳动合同+未缴社保，劳动者获经济补偿',caseNo:'皖芜劳人仲字〔2020〕第89号',date:'2020年4月',
+   summary:'谢某系南陵县农村妇女，2019年8月入职芜湖市镜湖区某餐饮公司做服务员。公司未签劳动合同、未缴社保。2020年1月公司放假后停业，谢某部分工资未拿到。谢某向镜湖区法律援助中心申请援助。经仲裁调解，公司应支付工资差额及经济补偿金，并为谢某补缴工作期间的社会保险。',
+   dispute:'用人单位不签劳动合同且不缴社保时，劳动者如何追讨工资和社保权益。',
+   result:'经法律援助律师介入，仲裁裁决支持谢某诉求：公司支付拖欠工资差额、未签劳动合同二倍工资差额及解除劳动关系经济补偿金，同时补缴工作期间的社会保险。',
+   amount:'工资差额+经济补偿金+社保补缴',legal:'《劳动合同法》第38、46、82条；《社会保险法》第58条',key:'用人单位自用工之日起即应签订劳动合同并缴纳社保，否则面临二倍工资、经济补偿及补缴等多重法律责任。'},
+
+  // === 内蒙古自治区 ===
+  {province:'内蒙古自治区',regions:['赤峰市','林西县'],title:'矿业公司拖欠270名职工养老保险1000余万元',caseNo:'内林西劳人仲字〔2021〕第45号',date:'2021年起',
+   summary:'林西县某矿业有限责任公司因经营问题，2021年起无法为公司270名职工缴纳养老保险，累计拖欠1000余万元，引发群体性信访事件。270名职工经过劳动仲裁后申请法院强制执行。法院调查发现，公司除厂房设备外还有一处约10,000平米的商用综合楼，市场价值数千万元。执行法官决定对生产经营影响最小的综合楼进行处置，由企业自行售卖房产，购房款汇入法院监管账户。',
+   dispute:'企业经营困难拖欠大量职工社保时，如何在不影响企业继续经营的前提下保障职工社保权益。',
+   result:'通过法院协调，企业自行售卖综合楼房产，短期内实现财产变现3,000余万元，全额为270名职工补缴了拖欠数年的养老保险。该批系列案件实质性化解，有效解决了养老保险历史遗留问题及群体性信访问题。',
+   amount:'1,000余万元（270人养老保险补缴）',legal:'《社会保险法》第63条；《最高法关于办理财产保全案件若干问题的规定》第13条',key:'企业拖欠社保的，劳动者集体维权可通过劳动仲裁+法院执行途径解决。法院可选择对企业经营影响最小的财产进行处置，实现双赢。'},
+  {province:'内蒙古自治区',regions:['巴林左旗','赤峰市'],title:'公司未缴养老保险被判赔偿13.7万元',caseNo:'内0422民初4179号',date:'2019年',
+   summary:'王云彬于2012年6月入职巴林左旗赤峰宇邦矿业有限公司，2012年至2014年月薪16,000元，2015年至2017年月薪16,600元。2017年3月双方解除劳动合同。在职期间公司未按实际工资足额缴纳养老保险，且因无法补缴导致王云彬养老保险权益受损。王云彬起诉要求公司赔偿因未缴纳养老保险造成的经济损失176,939.72元。',
+   dispute:'用人单位未缴养老保险且社保机构无法核定的情况下，劳动者能否直接向法院主张损失赔偿。',
+   result:'一审法院以社保征缴不属于法院受理范围为由驳回。二审法院改判：认定用人单位和劳动者都有参加和缴纳社会保险的义务，不缴或少缴违反《社会保险法》损害劳动者利益。根据赤峰市社保局出具的缴费基数证明，按社平工资300%计算应缴养老保险数额，判决公司赔偿王云彬养老金损失137,632元。',
+   amount:'137,632元',legal:'《社会保险法》第12条、第58条；《民事诉讼法》第64条',key:'用人单位未缴养老保险且无法补缴的，劳动者可直接向法院起诉主张经济损失赔偿，赔偿金额按实际应缴数额计算。'},
+  {province:'内蒙古自治区',regions:['喀喇沁旗','赤峰市'],title:'34名劳动者被拖欠工资及社保，法院联合调解快速解决',caseNo:'内喀劳人仲字〔2026〕第12号',date:'2026年6月',
+   summary:'喀喇沁旗某用人单位因经营困难，长期拖欠34名劳动者工资并未依法缴纳社会保险费。劳动者多次与企业协商无果，矛盾不断升级，最终集体诉至法院。法院受理后启动劳动争议多元化解机制，邀请人大代表、政协委员共同参与调解。法官向双方释法明理，阐明拖欠工资、欠缴社保的法律责任，代表委员深入企业了解经营困境，与劳动者面对面沟通。',
+   dispute:'企业经营困难导致群体性欠薪及社保欠缴时，如何通过非诉途径高效化解纠纷。',
+   result:'经过多轮合力协商，双方最终达成一致：用人单位立即支付拖欠的全部工资，并承诺按期补缴相应的社会保险费用。34起劳动争议纠纷全部以调解方式结案，劳动者不用开庭即拿到应得权益。',
+   amount:'34人工资全额支付+社保补缴',legal:'《劳动法》第50条；《社会保险法》第63条；《劳动合同法》第38条',key:'群体性社保欠缴纠纷可通过法院多元化解机制快速处理，劳动者不必经历漫长的诉讼程序即可获得权益保障。'},
+
+  // === 广东 ===
+  {province:'广东',regions:['韶关市','乐昌市'],title:'按最低基数缴社保被判补缴差额+滞纳金',caseNo:'粤韶劳人仲字〔2025〕第67号',date:'2025年3月',
+   summary:'陈某在韶关乐昌市某制造企业工作4年，实际月均工资6,500元，但公司一直按4,775元（当地最低基数）缴纳社保。陈某离职后发现社保缴费基数与实际工资存在较大差距，导致养老保险个人账户积累额明显偏低。陈某向韶关市劳动人事争议仲裁委员会申请仲裁，要求公司补缴社保缴费基数差额。',
+   dispute:'单位按最低基数而非实际工资缴纳社保是否构成违法，差额部分如何补缴。',
+   result:'仲裁委审理认为，广东省严格执行以实际工资作为社保缴费基数的规定，最低基数仅适用于实际工资低于最低基数的情况。陈某实际工资6,500元高于最低基数4,775元，应按实际工资缴纳。裁决公司补缴4年社保缴费基数差额共计38,000元，并缴纳滞纳金6,000元（按每日万分之五计算），合计44,000元。',
+   amount:'44,000元',legal:'《社会保险法》第12条、第86条；《广东省社会保险费征缴条例》',key:'广东省严格执行实际工资作为缴费基数，最低基数仅适用于实际工资低于最低基数的情况。单位按最低基数缴纳属于违法。'},
+  {province:'广东',regions:['肇庆市','怀集县'],title:'社保基数不足致医保待遇损失，单位全额赔偿',caseNo:'粤肇劳人仲字〔2025〕第31号',date:'2025年5月',
+   summary:'刘某在肇庆怀集县某浆站工作期间生病住院，因医疗保险缴费基数过低（按最低基数而非实际工资缴纳），导致医保个人账户划入金额减少，住院报销比例降低，个人多承担医疗费用21,000元。刘某向单位反映无果后申请劳动仲裁，要求单位赔偿因社保缴费基数不足导致的医疗费用差额损失。',
+   dispute:'因单位未足额缴纳医疗保险导致员工医疗费用报销减少的损失应由谁承担。',
+   result:'仲裁委审理认为，用人单位有义务按员工实际工资足额缴纳医疗保险。因单位未足额缴纳导致员工医疗保险待遇降低的，差额部分属于员工实际损失，应由用人单位承担。裁决单位全额赔偿刘某医疗费用差额损失21,000元。',
+   amount:'21,000元',legal:'《社会保险法》第23条、第86条；《民法典》第1165条',key:'社保缴费基数不足导致医保待遇损失的，用人单位需全额赔偿员工实际支出的医疗费用差额。'},
+  {province:'广东',regions:['韶关市','乐昌市'],title:'员工自愿放弃社保协议无效，公司仍需支付经济补偿',caseNo:'粤韶劳人仲字〔2024〕第152号',date:'2024年9月',
+   summary:'2023年1月，张某入职乐昌某公司，入职时公司要求张某签署《自愿放弃缴纳社会保险声明书》，声明因个人原因自愿放弃社保，公司每月支付500元社保补贴。2024年7月张某因工受伤，鉴定为九级伤残，要求公司支付工伤待遇。公司以张某自愿放弃社保为由拒绝承担工伤保险待遇。张某申请仲裁。',
+   dispute:'员工自愿放弃社保的协议是否有效；工伤发生后单位能否以此免除工伤保险责任。',
+   result:'仲裁委裁决：《自愿放弃社保声明书》违反法律强制性规定，属无效协议。根据最高人民法院司法解释，用人单位与劳动者约定不缴纳社保的约定无效。公司未依法缴纳工伤保险，发生工伤后全部工伤保险待遇由用人单位承担。裁决公司支付一次性伤残补助金、医疗补助金、就业补助金等各项工伤待遇共计85,000元，并补缴工作期间的社会保险。',
+   amount:'85,000元（工伤待遇）+社保补缴',legal:'《劳动合同法》第26条；《最高人民法院关于审理劳动争议案件适用法律问题的解释(二)》第19条',key:'任何"自愿放弃社保"的协议均属无效，用人单位不能以此免除缴纳社保的法定义务和工伤赔偿责任。'},
+
+  // === 浙江 ===
+  {province:'浙江',regions:['衢州市','龙游县'],title:'以未依法缴纳社保为由离职获经济补偿',caseNo:'浙衢劳人仲字〔2025〕第55号',date:'2025年4月',
+   summary:'周某在衢州龙游县某浆站工作6年，月均工资7,000元。单位长期按最低基数缴纳社保，周某多次要求按实际工资缴纳未果。2025年3月，周某以单位未依法缴纳社会保险费为由书面提出解除劳动合同，要求支付经济补偿金。单位辩称已为员工缴纳社保，不存在违法情形。',
+   dispute:'单位按最低基数缴纳社保是否属于"未依法缴纳"；员工据此解除合同能否获得经济补偿。',
+   result:'仲裁委审理认为，"依法缴纳社保"包括按实际工资核定缴费基数。单位长期按最低基数而非员工实际工资缴纳社保，属于未依法足额缴纳。周某依据《劳动合同法》第38条解除合同合法有据。裁决单位支付6个月经济补偿金共计42,000元（月均工资7,000元×6年），并责令单位按实际工资标准重新核定缴费基数。',
+   amount:'42,000元（经济补偿金）',legal:'《劳动合同法》第38条、第46条；《浙江省社会保险条例》',key:'按最低基数而非实际工资缴纳社保属于"未依法缴纳"，劳动者可据此解除合同并主张经济补偿。浙江省对此执行严格。'},
+  {province:'浙江',regions:['衢州市','龙游县'],title:'社保缴费基数争议致工伤待遇差额由单位补足',caseNo:'浙衢劳人仲字〔2024〕第88号',date:'2024年11月',
+   summary:'赵某在龙游某建材公司工作，月薪8,500元，但公司按最低基数5,346元缴纳工伤保险。2024年5月赵某在工作中受伤，经鉴定为八级伤残。社保基金按缴费基数核算的一次性伤残补助金为58,806元（11个月×5,346元），而按实际工资计算应为93,500元（11个月×8,500元），差额34,694元。赵某要求公司补足差额。',
+   dispute:'工伤保险缴费基数低于实际工资时，伤残补助金差额由谁承担。',
+   result:'仲裁委审理认为，根据《工伤保险条例》规定，用人单位未按实际工资足额缴纳工伤保险费的，工伤职工享受的工伤保险待遇由于缴费基数低而减少的部分，由用人单位补足。裁决公司补足一次性伤残补助金差额34,694元。',
+   amount:'34,694元',legal:'《工伤保险条例》第62条；《浙江省工伤保险条例》',key:'工伤保险缴费基数低于实际工资的，导致工伤待遇减少的差额部分由用人单位全额补足。'},
+
+  // === 海南 ===
+  {province:'海南',regions:['海口市','全省'],title:'38名园林工人追讨经济补偿金+补缴社保',caseNo:'琼海劳人仲字〔2019〕第268号',date:'2019年12月',
+   summary:'潘某等38名园林工人自2007年起在海口某园林有限公司工作，公司长期不签劳动合同、不缴社保。2011年潘某因交通事故受伤，省劳动保障监察总队曾责令公司与38名职工补签劳动合同并缴纳社保。但2018年底公司让38人待岗，未给予补偿，未补缴2007至2012年期间的社保。工人们向海口市法律援助中心求助。律师通过旧报纸报道、工资表等证据，证明了劳动关系。经过仲裁、一审、二审、再仲裁、强制执行，历时两年四个月。',
+   dispute:'劳动者如何在缺乏书面证据的情况下证明长期劳动关系；经济补偿金和社保补缴如何同时主张。',
+   result:'最终调解结案，38名员工分别获得经济补偿金共计466,500元，其中罗某等6人分别补缴了5至10年的社会保险。通过法律援助律师的努力，每位涉诉员工都争取到了应有的合法权益。',
+   amount:'466,500元（38人经济补偿金）+5-10年社保补缴',legal:'《劳动合同法》第38、46、82条；《社会保险法》第58、63条',key:'即使用人单位不配合，劳动者通过法律援助、仲裁和诉讼途径，仍可追回应得的经济补偿和社保权益。'},
+  {province:'海南',regions:['海口市','定安县'],title:'关联单位混同用工，确认劳动关系并补缴社保',caseNo:'琼海劳人仲字〔2024〕第156号',date:'2024年10月',
+   summary:'张某于2021年9月入职A公司担任司机，2023年9月与B公司重新签订劳动合同。A、B两公司法定代表人为同一人刘某。张某为两公司出车，工资、社保由两公司交替发放缴纳。2024年10月A公司解聘张某。张某申请仲裁，请求确认与A公司自2021年9月至2024年10月存在劳动关系，并要求补缴社保。',
+   dispute:'关联单位"混同用工"时如何认定劳动关系归属；用人单位能否通过交替签合同规避社保义务。',
+   result:'仲裁委认定A、B两公司属于关联单位，构成对张某的"混同用工"。虽然2023年9月后张某未与A公司订立书面劳动合同，但A公司对张某实际进行劳动管理。裁决确认张某与A公司自2021年9月至2024年10月存在劳动关系，A公司应补缴存续期间的社会保险费差额。',
+   amount:'3年劳动关系确认+社保补缴',legal:'《劳动合同法》第7条；《最高法劳动争议司法解释(二)》第3条',key:'关联单位混同用工不能规避社保义务，劳动者可要求与实际管理单位确认劳动关系并补缴社保。'}
+];
+
+// ============ STATE ============
+let currentUser = null;
+let rates = JSON.parse(JSON.stringify(DEFAULT_RATES));
+let layerConfigs = {};
+let layerAdjustState = {};
+let chartInstances = {};
+let adminSelectedStation = '商都';
+let localPolicyUpdates = [];
+let baseAdjustHistory = [];
+let layerCalcStation = '商都';
+let layerSubTab = 'overview'; // overview | single
+
+// ============ INIT ============
+function init(){
+  const savedRates = localStorage.getItem('ss7_rates');
+  if(savedRates) rates = JSON.parse(savedRates);
+  const savedLC = localStorage.getItem('ss7_layers');
+  if(savedLC) layerConfigs = JSON.parse(savedLC);
+  const savedAdj = localStorage.getItem('ss7_adjust');
+  if(savedAdj) layerAdjustState = JSON.parse(savedAdj);
+  const savedPolicy = localStorage.getItem('ss7_policy');
+  if(savedPolicy) localPolicyUpdates = JSON.parse(savedPolicy);
+  const savedBase = localStorage.getItem('ss7_baseHist');
+  if(savedBase) baseAdjustHistory = JSON.parse(savedBase);
+  STATIONS.forEach(s=>{
+    if(!layerConfigs[s.name]) initLayerConfig(s.name);
+  });
+  const savedUser = localStorage.getItem('ss7_login') || localStorage.getItem('ss7_user');
+  if(savedUser){
+    const loginTime = localStorage.getItem('ss7_login_time');
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    if(loginTime && (Date.now() - parseInt(loginTime)) < sevenDays){
+      // 7天内，自动登录
+      currentUser = JSON.parse(savedUser);
+      if(currentUser.role==='station_manager') layerCalcStation = currentUser.station;
+      localStorage.setItem('ss7_login_time', Date.now().toString());
+      showMain();
+    } else {
+      // 超过7天，清除登录状态，要求重新登录
+      localStorage.removeItem('ss7_login');
+      localStorage.removeItem('ss7_user');
+      localStorage.removeItem('ss7_login_time');
+    }
+  }
+}
+
+function initLayerConfig(stationName){
+  const st = STATIONS.find(s=>s.name===stationName);
+  // 优先使用飞书实际数据
+  if(DEFAULT_LAYER_DATA && DEFAULT_LAYER_DATA[stationName]){
+    const d = DEFAULT_LAYER_DATA[stationName];
+    layerConfigs[stationName] = {
+      gm:   {count:d.gm.count,   base:d.gm.base==='default'?st.base:d.gm.base,   layerRate:100},
+      mgmt: {count:d.mgmt.count, base:d.mgmt.base==='default'?st.base:d.mgmt.base, layerRate:100},
+      mid:  {count:d.mid.count,  base:d.mid.base==='default'?st.base:d.mid.base,  layerRate:null},
+      emp:  {count:d.emp.count,  base:d.emp.base==='default'?st.base:d.emp.base,  layerRate:null}
+    };
+    // 确保总人数为0的层级至少有0人（允许0人层级）
+    if(layerConfigs[stationName].gm.count===0) layerConfigs[stationName].gm.base=st.base;
+    if(layerConfigs[stationName].mgmt.count===0) layerConfigs[stationName].mgmt.base=st.base;
+  } else {
+    // 兜底：按比例分配
+    const total = STAFF_COUNTS[stationName] || 10;
+    const gmCount = Math.max(1, Math.round(total * 0.10));
+    const mgmtCount = Math.max(1, Math.round(total * 0.15));
+    const midCount = Math.max(1, Math.round(total * 0.25));
+    const empCount = total - gmCount - mgmtCount - midCount;
+    layerConfigs[stationName] = {
+      gm: {count:gmCount, base:st.base, layerRate:100},
+      mgmt: {count:mgmtCount, base:st.base, layerRate:100},
+      mid: {count:midCount, base:st.base, layerRate:null},
+      emp: {count:empCount>0?empCount:1, base:st.base, layerRate:null}
+    };
+  }
+  recalcLayerRates(stationName);
+}
+
+function recalcLayerRates(stationName){
+  const st = STATIONS.find(s=>s.name===stationName);
+  if(!st || !layerConfigs[stationName]) return;
+  const lc = layerConfigs[stationName];
+  const total = lc.gm.count + lc.mgmt.count + lc.mid.count + lc.emp.count;
+  if(total === 0) return;
+  lc.gm.layerRate = 100;
+  lc.mgmt.layerRate = Math.min(100, +(st.actual * 1.15).toFixed(1));
+  lc.mid.layerRate = Math.min(100, +(st.actual * 1.0).toFixed(1));
+  const gmContrib = lc.gm.count * 100;
+  const mgmtContrib = lc.mgmt.count * lc.mgmt.layerRate;
+  const midContrib = lc.mid.count * lc.mid.layerRate;
+  const empContrib = st.actual * total - gmContrib - mgmtContrib - midContrib;
+  lc.emp.layerRate = Math.max(0, Math.min(100, +(empContrib / lc.emp.count).toFixed(1)));
+}
+
+function saveRates(){ localStorage.setItem('ss7_rates', JSON.stringify(rates)); }
+function saveLayers(){ localStorage.setItem('ss7_layers', JSON.stringify(layerConfigs)); }
+function saveAdj(){ localStorage.setItem('ss7_adjust', JSON.stringify(layerAdjustState)); }
+function savePolicy(){ localStorage.setItem('ss7_policy', JSON.stringify(localPolicyUpdates)); }
+function saveBaseHist(){ localStorage.setItem('ss7_baseHist', JSON.stringify(baseAdjustHistory)); }
+
+// ============ LOGIN ============
+function clearLoginForm(){
+  document.getElementById('loginName').value = '';
+  document.getElementById('loginPhone').value = '';
+  var pwdEl = document.getElementById('loginPwd');
+  pwdEl.value = '';
+  pwdEl.type = 'text'; // 临时切text让浏览器丢弃自动填充
+  setTimeout(function(){ pwdEl.type = 'password'; pwdEl.focus(); }, 50);
+  document.getElementById('loginErr').textContent = '';
+}
+
+function doLogin(){
+  try {
+    var name = String(document.getElementById('loginName').value || '').trim();
+    var phone = String(document.getElementById('loginPhone').value || '').trim();
+    var pwd = String(document.getElementById('loginPwd').value || '');
+    var errEl = document.getElementById('loginErr');
+    errEl.textContent = '';
+
+    if(!name || !phone || !pwd){
+      errEl.textContent = '请输入姓名、手机号和密码';
+      return;
+    }
+
+    // 查找用户 — 强制字符串比较
+    var user = null;
+    for(var i = 0; i < ROSTER.length; i++){
+      if(String(ROSTER[i].name) === name && String(ROSTER[i].phone) === phone){
+        user = ROSTER[i];
+        break;
+      }
+    }
+    if(!user){
+      errEl.textContent = '姓名或手机号错误';
+      return;
+    }
+
+    // 验证密码 — 强制字符串比较
+    var passwords = getPasswords();
+    var storedPwd = String(passwords[String(user.phone)] || '');
+    if(storedPwd !== pwd){
+      errEl.textContent = '密码错误，请重新输入';
+      // 清空密码框，让用户重新输入
+      document.getElementById('loginPwd').value = '';
+      document.getElementById('loginPwd').focus();
+      return;
+    }
+
+    // ===== 验证全部通过，执行登录 =====
+    currentUser = { name: user.name, phone: user.phone, role: user.role, station: user.station || null };
+    if(user.role === 'station_manager') layerCalcStation = user.station;
+    localStorage.setItem('ss7_login', JSON.stringify(currentUser));
+    localStorage.setItem('ss7_user', JSON.stringify(currentUser));
+    localStorage.setItem('ss7_login_time', String(Date.now()));
+    showMain();
+  } catch(e){
+    document.getElementById('loginErr').textContent = '系统异常，请清除浏览器缓存后重试';
+  }
+}
+
+function doLogout(){
+  localStorage.removeItem('ss7_user');
+  localStorage.removeItem('ss7_login');
+  localStorage.removeItem('ss7_login_time');
+  currentUser = null;
+  document.getElementById('mainPage').style.display='none';
+  document.getElementById('loginPage').style.display='flex';
+  document.getElementById('loginName').value='';
+  document.getElementById('loginPhone').value='';
+  document.getElementById('loginPwd').value='';
+  document.getElementById('loginErr').textContent='';
+}
+
+// ============ PERMISSIONS ============
+function canSeeAll(){ return currentUser.role==='management'||currentUser.role==='admin'; }
+
+function getTabs(){
+  const tabs = [];
+  tabs.push({id:'overview',label:'首页',panel:'panel-overview'});
+  if(currentUser.role==='station_manager'){
+    tabs.push({id:'layer',label:'分层测算',panel:'panel-layer'});
+    tabs.push({id:'company',label:'成本vs预算',panel:'panel-company'});
+    tabs.push({id:'suggest',label:'优化建议',panel:'panel-suggest'});
+    tabs.push({id:'rate',label:'费率速查',panel:'panel-rate'});
+    tabs.push({id:'case',label:'仲裁案例',panel:'panel-case'});
+    tabs.push({id:'settings',label:'个人设置',panel:'panel-settings'});
+  } else if(currentUser.role==='admin'){
+    tabs.push({id:'company',label:'成本对比',panel:'panel-company'});
+    tabs.push({id:'layer',label:'分层测算',panel:'panel-layer'});
+    tabs.push({id:'suggest',label:'优化建议',panel:'panel-suggest'});
+    tabs.push({id:'rate',label:'费率速查',panel:'panel-rate'});
+    tabs.push({id:'case',label:'仲裁案例',panel:'panel-case'});
+    tabs.push({id:'data',label:'数据管理',panel:'panel-data'});
+    tabs.push({id:'settings',label:'用户管理',panel:'panel-settings'});
+  } else {
+    tabs.push({id:'company',label:'成本对比',panel:'panel-company'});
+    tabs.push({id:'layer',label:'分层测算',panel:'panel-layer'});
+    tabs.push({id:'suggest',label:'优化建议',panel:'panel-suggest'});
+    tabs.push({id:'rate',label:'费率速查',panel:'panel-rate'});
+    tabs.push({id:'case',label:'仲裁案例',panel:'panel-case'});
+    tabs.push({id:'settings',label:'用户管理',panel:'panel-settings'});
+  }
+  return tabs;
+}
+
+// ============ MAIN UI ============
+function showMain(){
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('mainPage').style.display='block';
+  const roleLabel = currentUser.role==='admin'?'管理员':(currentUser.role==='management'?'经营层':'');
+  const stationLabel = currentUser.station ? `（${currentUser.station}浆站）` : `（${roleLabel}）`;
+  document.getElementById('welcomeText').textContent = `欢迎，${currentUser.name}${stationLabel}`;
+  renderTabs();
+  renderAllPanels();
+  const tabs = getTabs();
+  if(tabs.length) switchTab(tabs[0].id);
+}
+
+function renderTabs(){
+  const bar = document.getElementById('tabBar');
+  const tabs = getTabs();
+  bar.innerHTML = tabs.map((t,i)=>`<button class="tab-btn${i===0?' active':''}" data-id="${t.id}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('');
+}
+
+function switchTab(id){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.id===id));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  const tab = getTabs().find(t=>t.id===id);
+  if(tab){
+    document.getElementById(tab.panel).classList.add('active');
+    if(id==='overview') setTimeout(()=>renderOverview(),100);
+    if(id==='company') setTimeout(()=>renderCompany(),100);
+    if(id==='layer') renderLayerCalc();
+    if(id==='case') renderCasePanel();
+  }
+}
+
+function renderAllPanels(){
+  if(currentUser.role==='admin') layerCalcStation = adminSelectedStation;
+  renderOverview();
+  if(currentUser.role==='station_manager'){
+    renderLayerCalc();renderCompany();renderSuggest();renderPanelRate();renderCasePanel();renderSettings();
+  } else if(currentUser.role==='admin'){
+    renderLayerCalc();renderCompany();renderSuggest();renderPanelRate();renderCasePanel();renderPanelData();renderSettings();
+  } else {
+    renderCompany();renderSuggest();renderPanelRate();renderCasePanel();renderSettings();
+  }
+}
+
+// ============ HELPERS ============
+function getUnitRate(province){const r=rates[province];if(!r)return 0;return +((r.pension_c+r.medical_c+r.unemp_c+r.injury_c).toFixed(1));}
+function getPersonalRate(province){const r=rates[province];if(!r)return 0;return +((r.pension_p+r.medical_p+r.unemp_p+(r.injury_p||0)).toFixed(1));}
+function calcMonthlyCost(base,province){return base*getUnitRate(province)/100;}
+function fmt(n){return n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function getStationInfo(name){return STATIONS.find(s=>s.name===name);}
+function destroyChart(id){if(chartInstances[id]){chartInstances[id].destroy();delete chartInstances[id];}}
+function getActiveStation(){
+  if(currentUser.role==='station_manager')return currentUser.station;
+  if(currentUser.role==='admin')return adminSelectedStation;
+  return '商都';
+}
+function getStationSelectorHTML(currentStation,callback){
+  let html=`<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <label style="font-size:13px;color:var(--text-light);font-weight:600">查看浆站：</label>
+    <select id="stationSelect" onchange="${callback}" style="width:auto;min-width:120px;padding:6px 10px;font-size:13px">`;
+  STATIONS.forEach(s=>{html+=`<option value="${s.name}" ${s.name===currentStation?'selected':''}>${s.name}浆站</option>`;});
+  html+=`</select></div>`;return html;
+}
+
+// ============ PANEL: OVERVIEW ============
+function renderOverview(){
+  const panel = document.getElementById('panel-overview');
+  const isStation = currentUser.role==='station_manager';
+  const reqRate = 70;
+  const okCount = STATIONS.filter(s=>s.actual>=reqRate).length;
+  const nearCount = STATIONS.filter(s=>s.actual>=reqRate-5 && s.actual<reqRate).length;
+  const failCount = STATIONS.filter(s=>s.actual<reqRate-5).length;
+  const avgRate = (STATIONS.reduce((a,s)=>a+s.actual,0)/STATIONS.length).toFixed(1);
+  const totalPeople = Object.values(STAFF_COUNTS).reduce((a,b)=>a+b,0);
+
+  // === A: Multi-year policy timeline ===
+  let policyHtml = `<div class="policy-card">
+    <h3>📋 国家夯实率政策总览（2026-2028及长期规划）</h3>
+    <div style="font-size:13px;color:#374151;margin-bottom:16px;line-height:1.8">
+      <div style="background:#fff;padding:12px;border-radius:8px;border:1px solid #bfdbfe">
+        根据《社会保险夯实率管理办法》（人社部发〔2025〕38号），全国统一要求分阶段逐步提高社保夯实率：
+      </div>
+    </div>
+    <div class="timeline">`;
+  PHASES.forEach((p,i)=>{
+    const dotClass = p.status==='current'?'current':'future';
+    const reqOk = STATIONS.filter(s=>s.actual>=p.rate).length;
+    policyHtml+=`<div class="timeline-item">
+      <div class="timeline-dot ${dotClass}">${p.rate}%</div>
+      <div class="timeline-label">${p.label}</div>
+      <div class="timeline-desc">${p.desc}</div>
+      ${!isStation ? `<div style="font-size:11px;color:var(--text-light);margin-top:4px">达标：${reqOk}/${STATIONS.length}站</div>` : ''}
+    </div>`;
+  });
+  policyHtml+=`</div>`;
+
+  if(!isStation){
+  policyHtml+=`<div class="stats-row" style="margin-top:12px">
+    <div class="stat-card"><div class="num">${STATIONS.length}</div><div class="label">浆站总数（${totalPeople}人）</div></div>
+    <div class="stat-card green"><div class="num">${okCount}</div><div class="label">2026达标(≥70%)</div></div>
+    <div class="stat-card orange"><div class="num">${nearCount}</div><div class="label">接近达标</div></div>
+    <div class="stat-card red"><div class="num">${failCount}</div><div class="label">不达标</div></div>
+    <div class="stat-card"><div class="num">${avgRate}%</div><div class="label">平均夯实率</div></div>
+  </div>`;
+
+  policyHtml+=`<div class="tbl-wrap" style="margin-top:16px"><table>
+    <thead><tr><th>阶段</th><th>年份</th><th>要求</th><th>政策说明</th><th>达标站数</th><th>不达标站数</th></tr></thead><tbody>`;
+  const phaseDescs = [
+    '全国统一夯实率最低要求，所有浆站必须达到70%以上',
+    '过渡提升期，要求夯实率达到80%，重点提升低夯实率浆站',
+    '基本全覆盖期，要求夯实率达到90%，接近全面合规',
+    '长期目标，实现100%全面合规，所有员工社保全额缴纳'
+  ];
+  PHASES.forEach((p,i)=>{
+    const pOk = STATIONS.filter(s=>s.actual>=p.rate).length;
+    const pFail = STATIONS.length - pOk;
+    const rowStyle = p.status==='current'?'style="background:#f0f7ff;font-weight:600"':'';
+    policyHtml+=`<tr ${rowStyle}>
+      <td>${p.status==='current'?'🔵 ':''}${p.label}</td><td>${p.year}${p.year===2029?'+':''}</td>
+      <td style="font-weight:700;color:var(--primary)">${p.rate}%</td>
+      <td style="font-size:12px;text-align:left">${phaseDescs[i]}</td>
+      <td style="color:var(--success);font-weight:600">${pOk}</td>
+      <td style="color:${pFail>0?'var(--danger)':'var(--success)'};font-weight:600">${pFail}</td>
+    </tr>`;
+  });
+  policyHtml+=`</tbody></table></div></div>`;
+
+  // Per-station comparison
+  policyHtml+=`<div class="card"><h3>各浆站 vs 各阶段要求对比</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>浆站</th><th>当前夯实率</th><th>2026(70%)</th><th>2027(80%)</th><th>2028(90%)</th><th>长期(100%)</th></tr></thead><tbody>`;
+  const sorted = [...STATIONS].sort((a,b)=>a.actual-b.actual);
+  sorted.forEach(s=>{
+    function phaseCell(actual,target){
+      const gap = actual - target;
+      if(gap>=0) return `<span class="badge badge-ok">✅ +${gap.toFixed(1)}%</span>`;
+      if(gap>=-5) return `<span class="badge badge-warn">⚠️ ${gap.toFixed(1)}%</span>`;
+      return `<span class="badge badge-err">❌ ${gap.toFixed(1)}%</span>`;
+    }
+    policyHtml+=`<tr>
+      <td style="font-weight:600">${s.name}</td>
+      <td style="font-weight:700">${s.actual}%</td>
+      <td>${phaseCell(s.actual,70)}</td>
+      <td>${phaseCell(s.actual,80)}</td>
+      <td>${phaseCell(s.actual,90)}</td>
+      <td>${phaseCell(s.actual,100)}</td>
+    </tr>`;
+  });
+  policyHtml+=`</tbody></table></div></div>`;
+  }
+
+  // === B: Local policy - filtered by station ===
+  if(isStation){
+    policyHtml += renderMinBaseSection();
+  }
+
+  // === C: Local policy push ===
+  let localPolicyHtml = `<div class="policy-card" style="background:linear-gradient(135deg,#fef9ef 0%,#fef3c7 100%);border-color:#fbbf24">
+    <h3 style="color:#92400e;border-bottom-color:#fbbf24">📢 当地政策推送与更新</h3>`;
+  if(isStation){
+    const st = getStationInfo(currentUser.station);
+    localPolicyHtml+=`<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <span class="policy-badge local">本站：${currentUser.station}浆站（${st.city}）</span>
+      <span class="policy-badge local">当前夯实率：${st.actual}%</span>
+    </div>`;
+  }
+  const allHistory = [...baseAdjustHistory, ...localPolicyUpdates].sort((a,b)=>b.date.localeCompare(a.date));
+  // Filter for station manager: only show own province data
+  const filteredHistory = isStation ? allHistory.filter(h=>{
+    const st = getStationInfo(h.station);
+    return !st || st.province === getStationInfo(currentUser.station)?.province || h.station==='全公司';
+  }) : allHistory;
+  if(filteredHistory.length){
+    localPolicyHtml+=`<div><b style="font-size:13px">📝 历史更新记录：</b>`;
+    filteredHistory.slice(0,10).forEach(h=>{
+      const typeLabel = h.type==='national'?'🏛':(h.type==='province'?'🏢':'📍');
+      localPolicyHtml+=`<div class="history-item"><span><b>${typeLabel}</b> ${h.station}：${h.content}</span><span style="color:var(--text-light);white-space:nowrap">${h.date}</span></div>`;
+    });
+    localPolicyHtml+=`</div>`;
+  }
+  localPolicyHtml+=`</div>`;
+
+  // Station own card
+  let contentHtml = '';
+  if(isStation){
+    const st = getStationInfo(currentUser.station);
+    const gap = (st.actual - reqRate).toFixed(2);
+    contentHtml = `<div class="card">
+      <h3>${currentUser.station}浆站 — 夯实率概况</h3>
+      <div class="stats-row">
+        <div class="stat-card"><div class="num">${st.actual}%</div><div class="label">当前夯实率</div></div>
+        <div class="stat-card"><div class="num">70%</div><div class="label">2026要求</div></div>
+        <div class="stat-card ${st.actual>=70?'green':'red'}"><div class="num" style="font-size:20px;color:${st.actual>=70?'var(--success)':'var(--danger)'}">${st.actual>=70?'✅ 已达标':'❌ 不达标'}</div><div class="label">当前状态</div></div>
+        <div class="stat-card"><div class="num" style="font-size:20px">${parseFloat(gap)>=0?'+':''}${gap}%</div><div class="label">与70%差距</div></div>
+      </div>
+      <div style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>夯实率进度</span><span>${st.actual}% / 70%</span></div>
+        <div class="progress-bar" style="height:12px"><div class="fill" style="width:${Math.min(100,st.actual/70*100)}%;background:${st.actual>=70?'var(--success)':'var(--warning)'}"></div></div>
+      </div>
+    </div>`;
+  }
+
+  // Chart - for station manager, show only own province; for admin/management, show all
+  let chartHtml = '';
+  if(isStation){
+    chartHtml = `<div class="card"><h3>全公司20个浆站夯实率对比</h3>
+      <div class="chart-box tall"><canvas id="chartOverviewBar"></canvas></div></div>`;
+  } else {
+    chartHtml = `<div class="card"><h3>全公司浆站夯实率排名（多阶段要求线）</h3>
+      <div class="chart-box tall"><canvas id="chartOverviewBar"></canvas></div></div>`;
+  }
+
+  // === 浆站快览仪表盘（仅经营层/管理员） ===
+  let quickViewHtml = '';
+  if(!isStation){
+    var budgets = getBudgets();
+    quickViewHtml = '<div class="card"><h3>🔍 浆站仪表盘</h3>';
+    quickViewHtml += '<p style="font-size:13px;color:var(--text-light);margin-bottom:12px">点击卡片查看单站详情，直观掌握各站经营状态</p>';
+    quickViewHtml += '<div class="gauge-grid" id="gaugeGrid">';
+    [...STATIONS].sort(function(a,b){return b.actual-a.actual}).forEach(function(s){
+      var budget = budgets[s.name] || 0;
+      var cost = getStationAnnualCost(s);
+      var usageRate = budget > 0 ? (cost/budget*100) : 0;
+      var gaugeColor = s.actual >= 70 ? '#10b981' : (s.actual >= 60 ? '#f59e0b' : '#ef4444');
+      var gaugeAngle = Math.min(s.actual, 100) / 100 * 180;
+      var statusText = s.actual >= 70 ? '✅ 达标' : '❌ 未达标';
+      var statusColor = s.actual >= 70 ? '#10b981' : '#ef4444';
+      var usageColor = usageRate > 100 ? '#ef4444' : (usageRate > 80 ? '#f59e0b' : '#10b981');
+      // 实际预算执行率（来自飞书数据）
+      var rcData = (REAL_COST_DATA && REAL_COST_DATA[s.name]) ? REAL_COST_DATA[s.name] : null;
+      var actualExecRate = (rcData && rcData.budget_annual > 0) ? (rcData.actual_ytd / rcData.budget_annual * 100) : 0;
+      var execColor = actualExecRate > 58.3 ? '#ef4444' : (actualExecRate > 40 ? '#f59e0b' : '#10b981');
+      
+      quickViewHtml += '<div class="gauge-card" onclick="quickViewStation(\''+s.name+'\')" data-station="'+s.name+'">';
+      // SVG半圆仪表盘
+      quickViewHtml += '<svg class="gauge-svg" viewBox="0 0 120 70">';
+      // 背景弧
+      quickViewHtml += '<path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="#e5e7eb" stroke-width="8" stroke-linecap="round"/>';
+      // 彩色弧 - 需要计算路径
+      var endAngle = Math.PI - (gaugeAngle * Math.PI / 180);
+      var endX = 60 + 50 * Math.cos(endAngle);
+      var endY = 60 - 50 * Math.sin(endAngle);
+      var largeArc = gaugeAngle > 180 ? 1 : 0;
+      quickViewHtml += '<path d="M 10 60 A 50 50 0 '+largeArc+' 1 '+endX.toFixed(1)+' '+endY.toFixed(1)+'" fill="none" stroke="'+gaugeColor+'" stroke-width="8" stroke-linecap="round"/>';
+      // 中心数字
+      quickViewHtml += '<text x="60" y="52" text-anchor="middle" font-size="16" font-weight="700" fill="'+gaugeColor+'">'+s.actual+'%</text>';
+      quickViewHtml += '<text x="60" y="66" text-anchor="middle" font-size="8" fill="#94a3b8">夯实率</text>';
+      quickViewHtml += '</svg>';
+      quickViewHtml += '<div class="st-name">'+s.name+'</div>';
+      quickViewHtml += '<div class="st-status" style="color:'+statusColor+'">'+statusText+'</div>';
+      quickViewHtml += '<div class="st-budget" style="color:'+execColor+'">执行 '+actualExecRate.toFixed(1)+'%</div>';
+      quickViewHtml += '</div>';
+    });
+    quickViewHtml += '</div>';
+    quickViewHtml += '<div id="quickViewDetail" style="margin-top:16px"></div>';
+    quickViewHtml += '</div>';
+  }
+
+  panel.innerHTML = policyHtml + localPolicyHtml + contentHtml + quickViewHtml + chartHtml;
+
+  setTimeout(()=>{
+    destroyChart('overviewBar');
+    const ctx = document.getElementById('chartOverviewBar');
+    if(ctx){
+      let chartStations = [...STATIONS];
+      const s2 = [...chartStations].sort((a,b)=>b.actual-a.actual);
+      const colors = s2.map(s=>s.actual>=70?'#10b981':'#ef4444');
+      const chartH = Math.max(200, s2.length * 38);
+      ctx.parentElement.style.height = chartH + 'px';
+      chartInstances['overviewBar'] = new Chart(ctx,{
+        type:'bar',
+        data:{labels:s2.map(s=>s.name+'('+s.city+')'),datasets:[{label:'夯实率%',data:s2.map(s=>s.actual),backgroundColor:colors,barPercentage:0.65}]},
+        options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:false}},
+          scales:{x:{beginAtZero:true,max:110,title:{display:true,text:'夯实率 (%)'},grid:{color:'rgba(0,0,0,.05)'}},y:{ticks:{font:{size:11}},afterFit(axis){axis.width=130;}}}},
+        plugins:[{id:'line70',afterDraw(chart){
+          const ctx2=chart.ctx;ctx2.save();
+          [{v:70,c:'#ef4444',l:'70%'},{v:80,c:'#f59e0b',l:'80%'},{v:90,c:'#3b82f6',l:'90%'}].forEach(line=>{
+            const x=chart.scales.x.getPixelForValue(line.v);
+            ctx2.strokeStyle=line.c;ctx2.lineWidth=1.5;ctx2.setLineDash([5,3]);
+            ctx2.beginPath();ctx2.moveTo(x,chart.chartArea.top);ctx2.lineTo(x,chart.chartArea.bottom);ctx2.stroke();
+            ctx2.fillStyle=line.c;ctx2.font='bold 11px sans-serif';ctx2.fillText(line.l,x+3,chart.chartArea.top+12+(line.v===70?0:line.v===80?14:28));
+          });
+          ctx2.restore();
+        }}]
+      });
+    }
+  },200);
+
+}
+
+// === 浆站快览全局函数 ===
+function quickViewStation(name){
+  // 更新卡片高亮
+  document.querySelectorAll('.gauge-card').forEach(function(c){
+    c.classList.toggle('selected', c.dataset.station===name);
+  });
+  
+  var detailDiv = document.getElementById('quickViewDetail');
+  if(!detailDiv) return;
+  
+  var st = STATIONS.find(function(s){ return s.name === name; });
+  if(!st){ detailDiv.innerHTML=''; return; }
+  
+  // 先销毁旧图表
+  destroyChart('qvGauge');
+  destroyChart('qvBudget');
+  
+  var budgets = getBudgets();
+  var budget = budgets[name] || 0;
+  var cost = getStationAnnualCost(st);
+  var usageRate = budget > 0 ? +(cost/budget*100).toFixed(1) : 0;
+  var gap = (st.actual - 70).toFixed(1);
+  var people = STAFF_COUNTS[st.name] || 10;
+  var unitRate = getUnitRate(st.province);
+  var statusText = st.actual >= 70 ? '✅ 达标' : '❌ 未达标';
+  var statusColor = st.actual >= 70 ? '#10b981' : '#ef4444';
+  
+  // 信息头 + 图表容器
+  var h = '<div style="background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px">';
+  h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+  h += '<h4 style="font-size:15px;font-weight:700;color:#1e40af;margin:0">'+st.name+' · '+st.province+' · '+st.city+'</h4>';
+  h += '<span style="font-size:13px;font-weight:600;color:'+statusColor+'">'+statusText+'</span>';
+  h += '</div>';
+  // 关键数据标签
+  h += '<div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px">';
+  h += '<span style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:12px">人数 <b>'+people+'</b></span>';
+  h += '<span style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:12px">单位费率 <b>'+unitRate+'%</b></span>';
+  h += '<span style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:12px">最低基数 <b>¥'+st.minBase.toLocaleString()+'</b></span>';
+  var ytdData = (REAL_COST_DATA && REAL_COST_DATA[name]) ? REAL_COST_DATA[name] : null;
+  var ytdActual = ytdData ? ytdData.actual_ytd : 0;
+  var ytdBudget = ytdData ? ytdData.budget_annual : 0;
+  var execRate = ytdBudget > 0 ? (ytdActual / ytdBudget * 100).toFixed(1) : 0;
+  h += '<span style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:12px">年成本 <b>¥'+cost.toLocaleString()+'</b></span>';
+  h += '<span style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:12px">年预算 <b>¥'+budget.toLocaleString()+'</b></span>';
+  if(ytdActual > 0){
+    h += '<span style="background:#fffbeb;border:1px solid #fbbf24;border-radius:6px;padding:4px 10px;font-size:12px;color:#92400e">1-7月实际 <b>¥'+ytdActual.toLocaleString()+'</b></span>';
+  }
+  if(ytdBudget > 0){
+    var execColor = execRate > 58.3 ? '#dc2626' : '#059669';
+    h += '<span style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:12px">执行率 <b style="color:'+execColor+'">'+execRate+'%</b></span>';
+  }
+  h += '</div>';
+  // 图表区域：2列布局
+  h += '<div class="qv-chart-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
+  // 左：夯实率竖向柱图
+  h += '<div style="background:#fff;border-radius:8px;padding:12px;text-align:center">';
+  h += '<div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px">夯实率 vs 目标</div>';
+  h += '<div style="height:180px"><canvas id="qvGauge"></canvas></div>';
+  h += '</div>';
+  // 右：预算使用率环形图
+  h += '<div style="background:#fff;border-radius:8px;padding:12px;text-align:center">';
+  h += '<div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px">预算使用率</div>';
+  h += '<div style="height:180px"><canvas id="qvBudget"></canvas></div>';
+  h += '</div>';
+  h += '</div>';
+  h += '</div>';
+  detailDiv.innerHTML = h;
+  
+  // 渲染图表
+  setTimeout(function(){
+    // 1. 夯实率竖向柱状图
+    var ctx1 = document.getElementById('qvGauge');
+    if(ctx1){
+      var gaugeColor = st.actual >= 70 ? '#10b981' : (st.actual >= 60 ? '#f59e0b' : '#ef4444');
+      chartInstances['qvGauge'] = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: [st.name],
+          datasets: [
+            { label: '夯实率', data: [st.actual], backgroundColor: gaugeColor, borderRadius: 6, barPercentage: 0.5 },
+            { label: '目标线', data: [70], backgroundColor: 'rgba(59,130,246,0.2)', borderColor: '#3b82f6', borderWidth: 2, borderDash: [5,3], borderRadius: 6, barPercentage: 0.5 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } },
+            tooltip: { callbacks: { label: function(ctx){ return ctx.dataset.label + ': ' + ctx.raw + '%'; } } }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: { beginAtZero: true, max: 100, ticks: { callback: function(v){ return v+'%'; }, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+          }
+        },
+        plugins: [{
+          id: 'valLabels',
+          afterDatasetsDraw: function(chart){
+            var c2 = chart.ctx;
+            chart.data.datasets.forEach(function(ds, di){
+              var meta = chart.getDatasetMeta(di);
+              meta.data.forEach(function(bar, i){
+                var val = ds.data[i];
+                c2.save();
+                c2.fillStyle = di === 0 ? gaugeColor : '#3b82f6';
+                c2.font = 'bold 13px sans-serif';
+                c2.textAlign = 'center';
+                c2.fillText(val + '%', bar.x, bar.y - 6);
+                c2.restore();
+              });
+            });
+          }
+        }]
+      });
+    }
+    
+    // 2. 预算使用率环形图
+    var ctx2 = document.getElementById('qvBudget');
+    if(ctx2){
+      var used = Math.min(cost, budget);
+      var remaining = Math.max(0, budget - cost);
+      var overBudget = cost > budget ? cost - budget : 0;
+      var budgetUsageColor = usageRate > 100 ? '#ef4444' : (usageRate > 80 ? '#f59e0b' : '#10b981');
+      
+      var budgetLabels, budgetData, budgetColors;
+      if(overBudget > 0){
+        budgetLabels = ['已用(超支)', '预算剩余'];
+        budgetData = [budget, overBudget];
+        budgetColors = ['#f59e0b', '#e5e7eb'];
+      } else {
+        budgetLabels = ['已用', '剩余'];
+        budgetData = [used, remaining];
+        budgetColors = [budgetUsageColor, '#e5e7eb'];
+      }
+      
+      chartInstances['qvBudget'] = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: budgetLabels,
+          datasets: [{ data: budgetData, backgroundColor: budgetColors, borderWidth: 0 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } },
+            tooltip: { callbacks: { label: function(ctx){ return ctx.label + ': ¥' + ctx.raw.toLocaleString(); } } }
+          }
+        },
+        plugins: [{
+          id: 'centerText',
+          afterDraw: function(chart){
+            var c3 = chart.ctx;
+            var w = chart.width;
+            var ctop = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+            c3.save();
+            c3.font = 'bold 18px sans-serif';
+            c3.fillStyle = budgetUsageColor;
+            c3.textAlign = 'center';
+            c3.fillText(usageRate.toFixed(1) + '%', w / 2, ctop);
+            c3.font = '11px sans-serif';
+            c3.fillStyle = '#94a3b8';
+            c3.fillText('使用率', w / 2, ctop + 18);
+            c3.restore();
+          }
+        }]
+      });
+    }
+  }, 100);
+}
+
+// === Min base section (filtered for station managers) ===
+function renderMinBaseSection(){
+  const isStation = currentUser.role==='station_manager';
+  const provinceGroups = {
+    '安徽':['宿松','庐江','舒城','五河','广德','泾县','南陵','叶集','凤台','怀远','灵璧'],
+    '内蒙古自治区':['商都','扎旗','翁旗','左旗','丰镇'],
+    '广东':['乐昌','怀集'],
+    '浙江':['龙游'],
+    '海南':['定安']
+  };
+  // Filter to own province for station managers
+  let filteredGroups = provinceGroups;
+  if(isStation){
+    const myProv = getStationInfo(currentUser.station)?.province;
+    filteredGroups = {};
+    if(myProv && provinceGroups[myProv]) filteredGroups[myProv] = provinceGroups[myProv];
+  }
+
+  let html = `<div class="card" style="background:linear-gradient(135deg,#f0fdf4 0%,#ecfdf5 100%);border-color:#86efac">
+    <h3 style="color:#166534;border-bottom-color:#86efac">📍 ${isStation ? (getStationInfo(currentUser.station)?.province||'')+(getStationInfo(currentUser.station)?.province?.includes('自治区')?'':'省') : '各浆站所在地'}最低社保基数要求（2026最新）</h3>
+    <p style="font-size:12px;color:#166534;margin-bottom:14px">${isStation ? '仅展示本站所在省份数据' : '按省份分组展示，管理员可根据当地最新政策手动调整'}</p>
+    <div style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap">
+      ${canSeeAll()?'<button class="btn btn-primary btn-sm" onclick="syncBasePolicy()">🔄 政策同步（模拟更新）</button><span id="syncResult" style="font-size:12px;color:var(--success);display:none;align-self:center">✅ 已同步最新政策</span>':''}
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>省份</th><th>浆站</th><th>所在县市</th><th>最低社保基数(元)</th>${canSeeAll()?'<th>操作</th>':''}</tr></thead><tbody>`;
+
+  for(const [prov, names] of Object.entries(filteredGroups)){
+    html+=`<tr style="background:#e0f2fe"><td colspan="${canSeeAll()?5:4}" style="font-weight:700;text-align:left;padding-left:12px">📍 ${prov}（单位费率：${getUnitRate(prov)}%）</td></tr>`;
+    names.forEach(n=>{
+      const st = STATIONS.find(s=>s.name===n);
+      html+=`<tr>
+        <td>${prov}</td><td style="font-weight:600">${st.name}浆站</td><td>${st.city}</td>
+        <td><input type="number" value="${st.minBase}" step="0.01" style="width:100px" id="base_${st.name}" ${canSeeAll()?`onchange="adjustBase('${st.name}',+this.value)"`:' readonly'}></td>
+        ${canSeeAll()?`<td><button class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11px" onclick="adjustBase('${st.name}',+document.getElementById('base_${st.name}').value)">保存</button></td>`:''}
+      </tr>`;
+    });
+  }
+  html+=`</tbody></table></div>`;
+
+  if(baseAdjustHistory.length){
+    const filteredBaseHist = isStation ? baseAdjustHistory.filter(h=>{
+      const st = getStationInfo(h.station);
+      return !st || st.province === getStationInfo(currentUser.station)?.province || h.station==='全公司';
+    }) : baseAdjustHistory;
+    if(filteredBaseHist.length){
+      html+=`<div style="margin-top:14px"><b style="font-size:13px">📝 基数调整记录：</b>`;
+      filteredBaseHist.slice().reverse().slice(0,8).forEach(h=>{
+        html+=`<div class="history-item"><span>${h.content}</span><span style="color:var(--text-light);white-space:nowrap">${h.date}</span></div>`;
+      });
+      html+=`</div>`;
+    }
+  }
+  html+=`</div>`;
+  return html;
+}
+
+function adjustBase(stationName, newVal){
+  const st = STATIONS.find(s=>s.name===stationName);
+  if(st){
+    const old = st.minBase;
+    st.minBase = newVal;
+    st.base = newVal;
+    const record = {date:new Date().toISOString().slice(0,10),station:stationName,content:`${stationName}浆站最低基数从¥${old}调整为¥${newVal}`,type:'local'};
+    baseAdjustHistory.push(record);
+    saveBaseHist();
+  }
+}
+
+function syncBasePolicy(){
+  const record = {date:new Date().toISOString().slice(0,10),station:'全公司',content:'政策同步：已核对各浆站所在地最新最低社保基数（2026年8月），当前数据已为最新',type:'national'};
+  baseAdjustHistory.push(record);
+  saveBaseHist();
+  const el = document.getElementById('syncResult');
+  if(el){el.style.display='inline';setTimeout(()=>{el.style.display='none';},3000);}
+}
+
+// ============ PANEL: LAYER-BASED CALC (merged with staff config + single person) ============
+function renderLayerCalc(){
+  const panel = document.getElementById('panel-layer');
+  let stName;
+  if(currentUser.role==='station_manager') stName = currentUser.station;
+  else if(currentUser.role==='admin') stName = layerCalcStation;
+  else stName = '商都';
+  const st = getStationInfo(stName);
+  const lc = layerConfigs[stName];
+  if(!lc || !st) return;
+
+  let html = '';
+  if(currentUser.role==='admin') html += getStationSelectorHTML(stName, "layerCalcStation=this.value;renderLayerCalc();");
+
+  // Sub-tabs
+  html += `<div class="sub-tab-bar">
+    <button class="sub-tab-btn ${layerSubTab==='overview'?'active':''}" onclick="layerSubTab='overview';renderLayerCalc()">📊 分层测算总览</button>
+    <button class="sub-tab-btn ${layerSubTab==='config'?'active':''}" onclick="layerSubTab='config';renderLayerCalc()">👥 人员配置</button>
+    <button class="sub-tab-btn ${layerSubTab==='multi'?'active':''}" onclick="layerSubTab='multi';renderLayerCalc()">🧮 多人测算</button>
+  </div>`;
+
+  if(layerSubTab==='overview'){
+    html += renderLayerOverview(stName, st, lc);
+  } else if(layerSubTab==='config'){
+    html += renderLayerStaffConfig(stName, st, lc);
+  } else {
+    html += renderSinglePersonCalc(stName, st);
+  }
+
+  panel.innerHTML = html;
+  if(layerSubTab==='overview'){
+    setTimeout(()=>renderLayerChart(stName, st, lc),100);
+  }
+}
+
+// --- Sub-panel: Layer Overview ---
+function renderLayerOverview(stName, st, lc){
+  const unitRate = getUnitRate(st.province);
+  const targetRate = 70;
+  const totalCount = LAYER_DEFS.reduce((a,ld)=>a+lc[ld.key].count,0);
+  const totalAtMin = LAYER_DEFS.reduce((a,ld)=>a+lc[ld.key].count*lc[ld.key].layerRate/100,0);
+  const currentRate = totalCount>0?(totalAtMin/totalCount*100):0;
+
+  const layersBelow = [];
+  LAYER_DEFS.forEach(ld=>{
+    const d = lc[ld.key];
+    layersBelow.push({key:ld.key,label:ld.label,count:d.count,base:d.base,currentRate:d.layerRate,belowCount:d.count*(100-d.layerRate)/100,minBase:st.minBase});
+  });
+
+  const gap = Math.ceil((targetRate/100)*totalCount - totalAtMin);
+
+  // 4 Scenarios
+  let scenarioA = {name:'方案A：全员微调',desc:'所有人小幅调整，成本分摊最均匀',layers:[],costMonthly:0,achievable:true};
+  let scenarioB = {name:'方案B：经营层',desc:'只调整经营层夯实率',layers:[],costMonthly:0};
+  let scenarioC = {name:'方案C：中层+员工',desc:'调整中层级和员工级',layers:[],costMonthly:0,achievable:true};
+  let scenarioD = {name:'方案D：只调员工级',desc:'成本最低，仅调整员工级',layers:[],costMonthly:0};
+
+  if(gap > 0 && currentRate < targetRate){
+    const lwr = layersBelow.filter(l=>l.currentRate<100&&l.count>0);
+    const tr2 = lwr.reduce((a,l)=>a+l.belowCount,0);
+    let rem = gap;
+    lwr.forEach(l=>{
+      const tm=tr2>0?Math.min(rem,l.belowCount*(gap/tr2)):0;
+      scenarioA.layers.push({...l,targetRate:Math.min(100,+(l.currentRate+(tm/l.count*100)).toFixed(1)),peopleToMove:Math.ceil(tm)});
+      rem-=tm;
+    });
+    scenarioA.costMonthly=scenarioA.layers.reduce((a,l)=>a+l.peopleToMove*(l.minBase*0.6)*unitRate/100,0);
+    scenarioA.achievable=rem<=0.01;
+
+    const md=layersBelow.find(l=>l.key==='mgmt');
+    if(md){const tm=Math.min(gap,md.belowCount);scenarioB.layers.push({...md,targetRate:Math.min(100,+(md.currentRate+(tm/md.count*100)).toFixed(1)),peopleToMove:Math.ceil(tm)});scenarioB.costMonthly=Math.min(tm,md.belowCount)*(st.minBase*0.6)*unitRate/100;scenarioB.achievable=Math.min(tm,md.belowCount)>=gap;}else{scenarioB.achievable=false;}
+
+    rem=gap;
+    [layersBelow.find(l=>l.key==='emp'),layersBelow.find(l=>l.key==='mid')].filter(Boolean).forEach(l=>{
+      const tm=Math.min(rem,l.belowCount);if(tm>0){scenarioC.layers.push({...l,targetRate:Math.min(100,+(l.currentRate+(tm/l.count*100)).toFixed(1)),peopleToMove:Math.ceil(tm)});rem-=tm;}
+    });
+    scenarioC.costMonthly=scenarioC.layers.reduce((a,l)=>a+l.peopleToMove*(l.minBase*0.6)*unitRate/100,0);
+    scenarioC.achievable=rem<=0.01;
+
+    const ed=layersBelow.find(l=>l.key==='emp');
+    if(ed){const tm=Math.min(gap,ed.belowCount);scenarioD.layers.push({...ed,targetRate:Math.min(100,+(ed.currentRate+(tm/ed.count*100)).toFixed(1)),peopleToMove:Math.ceil(tm)});scenarioD.costMonthly=tm*(st.minBase*0.6)*unitRate/100;scenarioD.achievable=tm>=gap;}else{scenarioD.achievable=false;}
+  }
+
+  const scenarios=[scenarioA,scenarioB,scenarioC,scenarioD];
+  const achievable=scenarios.filter(s=>s.achievable);
+  let recommended=-1;
+  if(achievable.length){const best=achievable.reduce((a,b)=>a.costMonthly<=b.costMonthly?a:b);recommended=scenarios.indexOf(best);}
+
+  let html = `<div class="card">
+    <h3>分层级调整测算 — ${stName}浆站（${st.city}，${totalCount}人）</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;font-size:13px">
+      <span>省份：<b>${st.province}</b></span>
+      <span>当前夯实率：<b style="color:${currentRate>=targetRate?'var(--success)':'var(--danger)'}">${currentRate.toFixed(1)}%</b></span>
+      <span>要求：<b>${targetRate}%</b></span>
+      <span>总人数：<b>${totalCount}</b></span>
+      <span>单位费率：<b>${unitRate}%</b></span>
+    </div>`;
+
+  html += `<div class="tbl-wrap"><table>
+    <thead><tr><th>层级</th><th>人数</th><th>基数</th><th>当前夯实率%</th><th>达标人数</th><th>未达标人数</th><th>月成本</th></tr></thead><tbody>`;
+  LAYER_DEFS.forEach(ld=>{
+    const d=lc[ld.key];const atMin=+(d.count*d.layerRate/100).toFixed(1);const below=+(d.count-atMin).toFixed(1);const mc=calcMonthlyCost(d.base,st.province)*d.count;
+    html+=`<tr class="${d.layerRate<100?'highlight-row':''}">
+      <td><span class="tag ${ld.tagClass}">${ld.label}</span></td><td>${d.count}</td><td>¥${d.base}</td>
+      <td style="color:${d.layerRate>=100?'var(--success)':'var(--warning)'};font-weight:600">${d.layerRate}%</td>
+      <td style="color:var(--success)">${atMin}</td><td style="color:${below>0?'var(--danger)':'var(--success)'}">${below}</td>
+      <td>¥${fmt(mc)}</td></tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+
+  if(currentRate < targetRate){
+    html += `<div class="card"><h3>调整方案对比（4种方案）</h3>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">需提升夯实率至 ${targetRate}%，还需 <b>${gap}</b> 人达到最低基数。</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">`;
+    scenarios.forEach((sc,idx)=>{
+      const isRec=idx===recommended;
+      html+=`<div class="scenario-card ${isRec?'recommended':''}"><h4>${sc.name} ${isRec?'⭐ 推荐':''}</h4><div class="detail">${sc.desc}</div>
+        <div style="margin:12px 0"><div class="cost">¥${fmt(sc.costMonthly)}<span style="font-size:12px;font-weight:400;color:var(--text-light)">/月</span></div>
+        <div style="font-size:13px;color:var(--text-light)">年增成本：¥${fmt(sc.costMonthly*12)}</div></div><div class="detail">`;
+      if(sc.layers.length){sc.layers.forEach(l=>{html+=`<div>${l.label}：${l.currentRate}% → ${l.targetRate}%（+${l.peopleToMove}人）</div>`;});}else{html+=`<div style="color:var(--text-light)">无需调整</div>`;}
+      html+=`</div><div style="margin-top:8px;font-size:12px;color:${sc.achievable?'var(--success)':'var(--danger)'}">${sc.achievable?'✅ 可达标':'⚠️ 仅靠此方案不足以达标'}</div>
+        <div style="margin-top:4px;font-size:11px;color:var(--text-light)">需调整：${sc.layers.reduce((a,l)=>a+l.peopleToMove,0)}人</div></div>`;
+    });
+    html+=`</div></div>`;
+  } else {
+    html+=`<div class="card" style="border-left:4px solid var(--success)"><h3 style="color:var(--success)">✅ 已达标</h3>
+      <p style="font-size:13px;color:var(--text-light)">当前夯实率 ${currentRate.toFixed(1)}% 已超过 ${targetRate}% 要求，无需调整。</p></div>`;
+  }
+
+  // Custom adjustment
+  html+=`<div class="card"><h3>自定义调整方案</h3>
+    <p style="font-size:13px;color:var(--text-light);margin-bottom:12px">手动输入各层级目标夯实率，计算成本</p>
+    <div class="tbl-wrap"><table><thead><tr><th>层级</th><th>当前%</th><th>目标%</th><th>调整人数</th><th>月增成本</th></tr></thead><tbody>`;
+  LAYER_DEFS.forEach(ld=>{
+    const d=lc[ld.key];const sk=stName;
+    if(!layerAdjustState[sk])layerAdjustState[sk]={};
+    if(!layerAdjustState[sk][ld.key])layerAdjustState[sk][ld.key]=d.layerRate;
+    const tL=layerAdjustState[sk][ld.key];const diff=tL-d.layerRate;
+    const pm=diff>0?Math.ceil(d.count*diff/100):0;const ci=pm*(st.minBase*0.6)*unitRate/100;
+    html+=`<tr><td><span class="tag ${ld.tagClass}">${ld.label}</span></td><td>${d.layerRate}%</td>
+      <td><input type="number" value="${tL}" min="0" max="100" step="0.1" style="width:70px" onchange="updateCustomTarget('${stName}','${ld.key}',+this.value)"></td>
+      <td style="color:${pm>0?'var(--danger)':'var(--success)'}">${pm>0?'+':''}${pm}</td>
+      <td style="color:${ci>0?'var(--danger)':'var(--success)'}">¥${fmt(ci)}</td></tr>`;
+  });
+  let cm=0;
+  LAYER_DEFS.forEach(ld=>{const d=lc[ld.key];const tL=(layerAdjustState[stName]&&layerAdjustState[stName][ld.key])||d.layerRate;const diff=tL-d.layerRate;const pm=diff>0?Math.ceil(d.count*diff/100):0;cm+=pm*(st.minBase*0.6)*unitRate/100;});
+  html+=`<tr style="font-weight:700;background:#f0f7ff"><td colspan="3">合计月增成本</td>
+    <td colspan="2" style="color:var(--primary);font-size:16px">¥${fmt(cm)}<span style="font-size:12px;font-weight:400"> / 年 ¥${fmt(cm*12)}</span></td></tr>`;
+  html+=`</tbody></table></div>
+    <div style="margin-top:16px"><canvas id="chartLayerCustom" height="250"></canvas></div>
+  </div>`;
+  return html;
+}
+
+function renderLayerChart(stName, st, lc){
+  // Render chart for custom adjustment
+  destroyChart('layerCustom');
+  const ctx = document.getElementById('chartLayerCustom');
+  if(!ctx) return;
+  const unitRate = getUnitRate(st.province);
+  const labels = [];
+  const currentData = [];
+  const targetData = [];
+  LAYER_DEFS.forEach(ld=>{
+    const d = lc[ld.key];
+    labels.push(ld.label);
+    currentData.push(d.layerRate);
+    const tL=(layerAdjustState[stName]&&layerAdjustState[stName][ld.key])||d.layerRate;
+    targetData.push(tL);
+  });
+  chartInstances['layerCustom'] = new Chart(ctx,{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'当前夯实率%',data:currentData,backgroundColor:'rgba(59,130,246,0.5)',borderColor:'#3b82f6',borderWidth:1},
+      {label:'目标夯实率%',data:targetData,backgroundColor:'rgba(16,185,129,0.5)',borderColor:'#10b981',borderWidth:1}
+    ]},
+    options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true,max:110,title:{display:true,text:'夯实率(%)'}}}}
+  });
+}
+
+// --- Sub-panel: Staff Config ---
+function renderLayerStaffConfig(stName, st, lc){
+  const unitRate = getUnitRate(st.province);
+  const totalStaff = STAFF_COUNTS[stName] || 10;
+
+  let html = `<div class="card">
+    <h3>人员层级配置 — ${stName}浆站（在岗${totalStaff}人）</h3>
+    <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">配置各层级人数和社保基数。修改后自动保存。各层级人数之和须等于${totalStaff}人。</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>层级</th><th>说明</th><th>人数</th><th>社保基数</th><th>层级夯实率%</th><th>月成本(单位)</th></tr></thead><tbody>`;
+
+  LAYER_DEFS.forEach(ld=>{
+    const d = lc[ld.key];
+    const mc = calcMonthlyCost(d.base, st.province) * d.count;
+    html+=`<tr>
+      <td style="font-weight:600"><span class="tag ${ld.tagClass}">${ld.label}</span></td>
+      <td style="font-size:12px;color:var(--text-light)">${ld.desc}</td>
+      <td><input type="number" value="${d.count}" min="0" style="width:60px" onchange="updateLayer('${stName}','${ld.key}','count',+this.value)"></td>
+      <td><input type="number" value="${d.base}" min="0" step="0.01" style="width:90px" onchange="updateLayer('${stName}','${ld.key}','base',+this.value)"></td>
+      <td><input type="number" value="${d.layerRate}" min="0" max="100" step="0.1" style="width:70px" onchange="updateLayer('${stName}','${ld.key}','layerRate',+this.value)"></td>
+      <td style="font-weight:600">¥${fmt(mc)}</td>
+    </tr>`;
+  });
+
+  const totalCount = LAYER_DEFS.reduce((a,ld)=>a+lc[ld.key].count,0);
+  const totalCost = LAYER_DEFS.reduce((a,ld)=>a+calcMonthlyCost(lc[ld.key].base,st.province)*lc[ld.key].count,0);
+  const totalAtMin = LAYER_DEFS.reduce((a,ld)=>a+lc[ld.key].count*lc[ld.key].layerRate/100,0);
+  const impliedRate = totalCount>0?(totalAtMin/totalCount*100).toFixed(1):'0';
+  const countMatch = totalCount === totalStaff;
+
+  html+=`<tr style="font-weight:700;background:${countMatch?'#f0f7ff':'#fef2f2'}">
+    <td>合计</td><td style="font-size:12px;color:${countMatch?'var(--success)':'var(--danger)'}">${countMatch?'✅ 人数匹配':'⚠️ 人数不等('+totalCount+'/'+totalStaff+')'}</td>
+    <td>${totalCount}/${totalStaff}</td><td></td>
+    <td>${impliedRate}%</td>
+    <td>¥${fmt(totalCost)}</td>
+  </tr>`;
+  html+=`</tbody></table></div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-light)">
+      省份：${st.province} | 单位费率合计：${unitRate}% | 最低基数：¥${st.minBase} | 所在县市：${st.city}
+    </div>
+    <div style="margin-top:10px">
+      <button class="btn btn-outline btn-sm" onclick="resetLayers('${stName}')">↩ 恢复默认配置</button>
+    </div>
+  </div>`;
+  return html;
+}
+
+// --- Sub-panel: Multi Person Calculation ---
+var multiCalcVisibleCount = 5;
+function renderSinglePersonCalc(stName, st){
+  const prov = st.province;
+  const r = rates[prov];
+  const unitRate = getUnitRate(prov);
+  const personalRate = getPersonalRate(prov);
+  const totalPeople = STAFF_COUNTS[stName] || 10;
+
+  let html = `<div class="card">
+    <h3>🧮 多人社保测算 — ${stName}浆站（在岗${totalPeople}人）</h3>
+    <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">
+      可同时对多人进行社保测算，调整各人的岗位级别、缴费基数等参数，直观对比不同组合下的总成本变化和夯实率变化。
+      默认显示前${multiCalcVisibleCount}人，可点击"添加更多"增加测算人数。
+    </p>
+    <div style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-outline btn-sm" onclick="multiCalcVisibleCount=Math.min(${totalPeople},multiCalcVisibleCount+5);renderLayerCalc()">➕ 添加更多（+5人）</button>
+      <button class="btn btn-outline btn-sm" onclick="multiCalcVisibleCount=Math.max(3,multiCalcVisibleCount-5);renderLayerCalc()">➖ 减少</button>
+      <span style="font-size:12px;color:var(--text-light)">当前显示：${Math.min(multiCalcVisibleCount,totalPeople)} / ${totalPeople} 人</span>
+      <button class="btn btn-primary btn-sm" onclick="calcMultiPerson('${stName}')">📊 批量计算</button>
+      <button class="btn btn-success btn-sm" onclick="batchSetLayer('${stName}')">⚡ 批量设置层级</button>
+      <button class="btn btn-outline btn-sm" onclick="batchSetBase('${stName}')">⚡ 批量设置基数</button>
+      <button class="btn btn-outline btn-sm" onclick="batchSetRate('${stName}')">⚡ 批量设置夯实率</button>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>编号</th><th>姓名</th><th>层级</th><th>当前基数</th><th>实际月工资</th><th>目标夯实率%</th><th>操作</th></tr></thead><tbody>`;
+
+  const showCount = Math.min(multiCalcVisibleCount, totalPeople);
+  for(var i=0; i<showCount; i++){
+    html+=`<tr>
+      <td>${i+1}</td>
+      <td><input type="text" id="mp_name_${i}" placeholder="员工${i+1}" value="员工${i+1}" style="width:70px;font-size:12px"></td>
+      <td><select id="mp_layer_${i}" style="width:90px;font-size:12px">
+        <option value="gm">总经理级</option>
+        <option value="mgmt">经营层</option>
+        <option value="mid" ${i<2?'selected':''}>中层级</option>
+        <option value="emp" ${i>=2?'selected':''}>员工级</option>
+      </select></td>
+      <td><input type="number" id="mp_base_${i}" value="${st.minBase}" step="0.01" style="width:80px;font-size:12px"></td>
+      <td><input type="number" id="mp_wage_${i}" value="5000" step="0.01" style="width:80px;font-size:12px"></td>
+      <td><input type="number" id="mp_rate_${i}" value="${st.actual}" min="0" max="100" step="1" style="width:60px;font-size:12px"></td>
+      <td><button class="btn btn-outline btn-sm" style="padding:2px 8px;font-size:11px" onclick="calcOnePerson('${stName}',${i})">计算</button></td>
+    </tr>`;
+  }
+  html+=`</tbody></table></div>`;
+  if(showCount < totalPeople){
+    html+=`<div style="margin-top:10px;font-size:12px;color:var(--text-light)">还有 ${totalPeople - showCount} 人未显示，点击"添加更多"继续</div>`;
+  }
+  html+=`<div id="mp_result"></div></div>`;
+
+  // 费率参考
+  html += `<div class="card">
+    <h3>📋 ${prov.includes('自治区')?prov:prov+'省'}费率参考</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>险种</th><th>单位</th><th>个人</th><th>合计</th></tr></thead><tbody>
+      <tr><td>养老保险</td><td>${r.pension_c}%</td><td>${r.pension_p}%</td><td>${r.pension_c+r.pension_p}%</td></tr>
+      <tr><td>医疗保险</td><td>${r.medical_c}%</td><td>${r.medical_p}%</td><td>${r.medical_c+r.medical_p}%</td></tr>
+      <tr><td>失业保险</td><td>${r.unemp_c}%</td><td>${r.unemp_p}%</td><td>${r.unemp_c+r.unemp_p}%</td></tr>
+      <tr><td>工伤保险</td><td>${r.injury_c}%</td><td>0%</td><td>${r.injury_c}%</td></tr>
+      <tr style="font-weight:700;background:#f0f7ff"><td>合计</td><td>${unitRate}%</td><td>${personalRate}%</td><td>${(unitRate+personalRate).toFixed(1)}%</td></tr>
+    </tbody></table></div>
+  </div>`;
+  return html;
+}
+
+// === Custom Modal for batch operations (replaces prompt() for PC+mobile) ===
+var modalCallback = null;
+function showCustomModal(title, contentHTML, onConfirm) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalContent').innerHTML = contentHTML;
+  document.getElementById('customModal').style.display = 'flex';
+  modalCallback = onConfirm;
+  document.getElementById('modalConfirmBtn').onclick = function() {
+    if(modalCallback) modalCallback();
+    closeCustomModal();
+  };
+}
+function closeCustomModal() {
+  document.getElementById('customModal').style.display = 'none';
+  modalCallback = null;
+}
+
+function batchSetLayer(stName){
+  var html = '<p style="font-size:13px;color:#6b7280;margin-bottom:12px">选择要批量设置的层级：</p>' +
+    '<select id="modalLayerSelect" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">' +
+    '<option value="gm">总经理级</option>' +
+    '<option value="mgmt">经营层</option>' +
+    '<option value="mid">中层级</option>' +
+    '<option value="emp" selected>员工级</option>' +
+    '</select>';
+  showCustomModal('批量设置层级', html, function(){
+    var layer = document.getElementById('modalLayerSelect').value;
+    var showCount = Math.min(multiCalcVisibleCount, STAFF_COUNTS[stName]||10);
+    for(var i=0;i<showCount;i++){
+      var el = document.getElementById('mp_layer_'+i);
+      if(el) el.value = layer;
+    }
+  });
+}
+
+function batchSetBase(stName){
+  var defaultBase = getStationInfo(stName).minBase;
+  var html = '<p style="font-size:13px;color:#6b7280;margin-bottom:12px">输入批量设置的缴费基数（元）：</p>' +
+    '<input type="number" id="modalBaseInput" value="' + defaultBase + '" step="0.01" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">';
+  showCustomModal('批量设置基数', html, function(){
+    var base = document.getElementById('modalBaseInput').value;
+    if(!base || isNaN(+base)) return;
+    var showCount = Math.min(multiCalcVisibleCount, STAFF_COUNTS[stName]||10);
+    for(var i=0;i<showCount;i++){
+      var el = document.getElementById('mp_base_'+i);
+      if(el) el.value = base;
+    }
+  });
+}
+
+function batchSetRate(stName){
+  var st = getStationInfo(stName);
+  var defaultRate = st ? st.actual : 70;
+  var html = '<p style="font-size:13px;color:#6b7280;margin-bottom:12px">输入批量设置的夯实率（%）：</p>' +
+    '<p style="font-size:12px;color:#9ca3af;margin-bottom:8px">当前浆站实际夯实率：' + (st?st.actual:'--') + '%</p>' +
+    '<input type="number" id="modalRateInput" value="' + defaultRate.toFixed(1) + '" min="0" max="100" step="1" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">';
+  showCustomModal('批量设置夯实率', html, function(){
+    var rate = document.getElementById('modalRateInput').value;
+    if(rate === '' || isNaN(+rate)) return;
+    rate = Math.max(0, Math.min(100, +rate));
+    var showCount = Math.min(multiCalcVisibleCount, STAFF_COUNTS[stName]||10);
+    for(var i=0;i<showCount;i++){
+      var el = document.getElementById('mp_rate_'+i);
+      if(el) el.value = rate;
+    }
+  });
+}
+
+function calcOnePerson(stName, idx){
+  calcMultiPerson(stName, idx);
+}
+
+function calcMultiPerson(stName, onlyIdx){
+  const st = getStationInfo(stName);
+  if(!st) return;
+  const prov = st.province;
+  const unitRate = getUnitRate(prov);
+  const personalRate = getPersonalRate(prov);
+  const r = rates[prov];
+  const layerLabels = {gm:'总经理级',mgmt:'经营层',mid:'中层级',emp:'员工级'};
+  const totalPeople = STAFF_COUNTS[stName] || 10;
+  const showCount = Math.min(multiCalcVisibleCount, totalPeople);
+
+  let totalIncUnitMonthly = 0, totalIncPersonalMonthly = 0;
+  let totalCurUnitMonthly = 0, totalTgtUnitMonthly = 0;
+  let rows = [];
+  let atMinCount = 0;
+
+  for(var i=0; i<showCount; i++){
+    if(onlyIdx !== undefined && onlyIdx !== i) continue;
+    var name = (document.getElementById('mp_name_'+i)||{}).value || ('员工'+(i+1));
+    var layer = (document.getElementById('mp_layer_'+i)||{}).value || 'emp';
+    var currentBase = +(document.getElementById('mp_base_'+i)||{}).value || 0;
+    var actualWage = +(document.getElementById('mp_wage_'+i)||{}).value || 0;
+    var targetRate = +(document.getElementById('mp_rate_'+i)||{}).value || 100;
+
+    var targetBase = Math.max(currentBase, Math.min(actualWage, actualWage * targetRate / 100));
+    var curUnit = currentBase * unitRate / 100;
+    var tgtUnit = targetBase * unitRate / 100;
+    var curPersonal = currentBase * personalRate / 100;
+    var tgtPersonal = targetBase * personalRate / 100;
+    var incUnit = tgtUnit - curUnit;
+    var incPersonal = tgtPersonal - curPersonal;
+
+    totalCurUnitMonthly += curUnit;
+    totalTgtUnitMonthly += tgtUnit;
+    totalIncUnitMonthly += incUnit;
+    totalIncPersonalMonthly += incPersonal;
+    if(targetBase >= st.minBase) atMinCount++;
+
+    rows.push({idx:i, name, layer:layerLabels[layer], currentBase, targetBase, curUnit, tgtUnit, incUnit, incPersonal});
+  }
+
+  // 计算整体夯实率变化
+  var curRateTotal = 0, tgtRateTotal = 0;
+  for(var j=0;j<rows.length;j++){
+    curRateTotal += rows[j].currentBase >= st.minBase ? 100 : (rows[j].currentBase / st.minBase * 100);
+    tgtRateTotal += rows[j].targetBase >= st.minBase ? 100 : (rows[j].targetBase / st.minBase * 100);
+  }
+  var curImpliedRate = showCount > 0 ? (curRateTotal / showCount) : 0;
+  var tgtImpliedRate = showCount > 0 ? (tgtRateTotal / showCount) : 0;
+
+  let html = `<div class="single-calc-result">
+    <h4>📊 多人批量测算结果 — ${stName}浆站（${rows.length}人）</h4>
+    <div style="font-size:13px;color:var(--text-light);margin-bottom:12px">
+      ${prov.includes('自治区')?prov:prov+'省'} · ${st.city} | 单位费率：${unitRate}%
+    </div>
+
+    <div class="calc-grid" style="margin-bottom:16px">
+      <div class="calc-item">
+        <div class="val" style="color:${totalIncUnitMonthly>0?'var(--danger)':'var(--success)'}">¥${fmt(totalIncUnitMonthly)}</div>
+        <div class="lbl">月增成本合计（单位）</div>
+      </div>
+      <div class="calc-item">
+        <div class="val" style="color:${totalIncPersonalMonthly>0?'var(--danger)':'var(--success)'}">¥${fmt(totalIncPersonalMonthly)}</div>
+        <div class="lbl">月增成本合计（个人）</div>
+      </div>
+      <div class="calc-item">
+        <div class="val" style="color:var(--primary)">¥${fmt(totalIncUnitMonthly*12)}</div>
+        <div class="lbl">年增成本合计（单位）</div>
+      </div>
+      <div class="calc-item">
+        <div class="val" style="color:${curImpliedRate>=70?'var(--success)':'var(--danger)'}">
+          ${curImpliedRate.toFixed(1)}% → ${tgtImpliedRate.toFixed(1)}%
+        </div>
+        <div class="lbl">夯实率变化（测算人数）</div>
+      </div>
+      <div class="calc-item">
+        <div class="val" style="color:var(--success)">${atMinCount}/${rows.length}</div>
+        <div class="lbl">调整后达标人数</div>
+      </div>
+    </div>
+
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>编号</th><th>姓名</th><th>层级</th><th>当前基数</th><th>→</th><th>目标基数</th><th>月增(单位)</th><th>月增(个人)</th><th>年增(单位)</th></tr></thead><tbody>`;
+
+  rows.forEach(function(row){
+    html+=`<tr>
+      <td>${row.idx+1}</td><td>${row.name}</td><td>${row.layer}</td>
+      <td>¥${fmt(row.currentBase)}</td><td>→</td><td style="font-weight:600">¥${fmt(row.targetBase)}</td>
+      <td style="color:${row.incUnit>0?'var(--danger)':'var(--success)'}">¥${fmt(row.incUnit)}</td>
+      <td style="color:${row.incPersonal>0?'var(--danger)':'var(--success)'}">¥${fmt(row.incPersonal)}</td>
+      <td style="color:var(--primary)">¥${fmt(row.incUnit*12)}</td>
+    </tr>`;
+  });
+
+  html+=`<tr style="font-weight:700;background:#f0f7ff">
+    <td colspan="6">合计</td>
+    <td style="color:var(--danger)">¥${fmt(totalIncUnitMonthly)}</td>
+    <td style="color:var(--danger)">¥${fmt(totalIncPersonalMonthly)}</td>
+    <td style="color:var(--primary)">¥${fmt(totalIncUnitMonthly*12)}</td>
+  </tr>`;
+  html+=`</tbody></table></div>
+
+    <div style="margin-top:14px;padding:12px;background:#fff;border-radius:8px;border:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">📈 夯实率影响分析</div>
+      <div style="font-size:12px;color:var(--text-light);line-height:1.8">
+        当前测算人数夯实率：<b>${curImpliedRate.toFixed(1)}%</b> → 调整后：<b style="color:${tgtImpliedRate>=70?'var(--success)':'var(--danger)'}">${tgtImpliedRate.toFixed(1)}%</b>
+        （${tgtImpliedRate>=curImpliedRate?'提升':'下降'} ${Math.abs(tgtImpliedRate-curImpliedRate).toFixed(1)}%）<br>
+        全站当前夯实率：<b>${st.actual}%</b> | 
+        若按此方案调整全部${totalPeople}人，预估全站新夯实率：<b>${
+          (()=>{
+            var adjustExtra = (tgtImpliedRate - curImpliedRate) * showCount / 100;
+            var newTotal = st.actual * totalPeople / 100 + adjustExtra;
+            return (newTotal / totalPeople * 100).toFixed(1);
+          })()
+        }%</b>
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById('mp_result').innerHTML = html;
+}
+
+function updateLayer(stationName, layerKey, field, value){
+  if(!layerConfigs[stationName]) return;
+  layerConfigs[stationName][layerKey][field] = value;
+  saveLayers();
+  renderLayerCalc();
+}
+
+function resetLayers(stationName){
+  initLayerConfig(stationName);
+  saveLayers();
+  renderLayerCalc();
+}
+
+function updateCustomTarget(sn,lk,v){if(!layerAdjustState[sn])layerAdjustState[sn]={};layerAdjustState[sn][lk]=v;saveAdj();renderLayerCalc();}
+
+// ============ PANEL: COMPANY (成本vs预算 对比看板) ============
+function getStationAnnualCost(s){
+  // 计算某浆站的年度社保成本（单位部分）= 人数 × 基数 × 单位费率% × 12 × (夯实率/100)
+  var people = STAFF_COUNTS[s.name] || 10;
+  var unitRate = getUnitRate(s.province);
+  return Math.round(people * s.base * unitRate / 100 * 12 * (s.actual / 100));
+}
+function renderCompany(){
+  const panel=document.getElementById('panel-company');
+  const isStation = currentUser.role==='station_manager';
+  if(!canSeeAll() && !isStation){panel.innerHTML='';return;}
+
+  const budgets = getBudgets();
+  const isAdmin = currentUser.role==='admin';
+
+  // 确定要显示的浆站列表
+  let stationList;
+  if(isStation){
+    stationList = STATIONS.filter(s=>s.name===currentUser.station);
+  } else {
+    stationList = [...STATIONS];
+  }
+
+  // 计算各站成本和预算
+  let totalCost = 0, totalBudget = 0, totalYtdActual = 0;
+  const stationData = stationList.map(s=>{
+    const cost = getStationAnnualCost(s);
+    const budget = budgets[s.name] || 0;
+    const usageRate = budget > 0 ? (cost / budget * 100) : 0;
+    const ytdActual = (REAL_COST_DATA && REAL_COST_DATA[s.name]) ? REAL_COST_DATA[s.name].actual_ytd : 0;
+    const ytdBudget = (REAL_COST_DATA && REAL_COST_DATA[s.name]) ? REAL_COST_DATA[s.name].budget_annual : 0;
+    const execRate = ytdBudget > 0 ? (ytdActual / ytdBudget * 100) : 0;
+    totalCost += cost;
+    totalBudget += budget;
+    totalYtdActual += ytdActual;
+    return {station:s, cost, budget, usageRate, ytdActual, ytdBudget, execRate};
+  });
+
+  const totalUsageRate = totalBudget > 0 ? (totalCost / totalBudget * 100) : 0;
+  const totalExecRate = totalBudget > 0 ? (totalYtdActual / totalBudget * 100) : 0;
+
+  let html = '';
+
+  // 总览区域
+  html += `<div class="card"><h3>📊 成本 vs 预算 总览${isStation ? ' — '+currentUser.station+'浆站' : ' — 全公司'}</h3>
+    <div class="stats-row">
+      <div class="stat-card"><div class="num">¥${fmt(totalCost)}</div><div class="label">年度社保成本（测算）</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--primary)">¥${fmt(totalBudget)}</div><div class="label">年度预算总额</div></div>
+      <div class="stat-card ${totalUsageRate>100?'red':(totalUsageRate>90?'orange':'green')}"><div class="num">${totalUsageRate.toFixed(1)}%</div><div class="label">测算使用率</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--warning)">¥${fmt(totalYtdActual)}</div><div class="label">1-7月实际社保费</div></div>
+      <div class="stat-card ${totalExecRate>58.3?'red':'green'}"><div class="num">${totalExecRate.toFixed(1)}%</div><div class="label">预算执行率</div></div>
+    </div>
+    <div style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span>预算使用进度</span><span>${totalUsageRate.toFixed(1)}%</span>
+      </div>
+      <div class="progress-bar" style="height:14px">
+        <div class="fill" style="width:${Math.min(100,totalUsageRate)}%;background:${totalUsageRate>100?'var(--danger)':(totalUsageRate>90?'var(--warning)':'var(--success)')}"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-light);margin-top:4px">
+        <span>成本：¥${fmt(totalCost)}</span><span>预算：¥${fmt(totalBudget)}</span>
+      </div>
+    </div>
+    <div style="margin-top:16px"><canvas id="chartCompanyOverview" height="100"></canvas></div>
+  </div>`;
+
+  // 管理员可编辑预算
+  if(isAdmin){
+    html += `<div class="card"><h3>⚙️ 预算设置</h3>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:12px">可手动设置各浆站年度预算。修改后自动保存，成本vs预算看板实时更新。</p>
+      <button class="btn btn-outline btn-sm" onclick="resetBudgets()">↩ 恢复默认预算</button>
+      <div class="tbl-wrap" style="margin-top:12px"><table>
+        <thead><tr><th>浆站</th><th>省份</th><th>在岗人数</th><th>参考成本</th><th>年度预算</th><th>使用率</th></tr></thead><tbody>`;
+    STATIONS.forEach(s=>{
+      const cost = getStationAnnualCost(s);
+      const budget = budgets[s.name] || 0;
+      const usage = budget>0?(cost/budget*100):0;
+      html+=`<tr><td style="font-weight:600">${s.name}浆站</td><td>${s.province}</td><td>${STAFF_COUNTS[s.name]||'-'}</td>
+        <td>¥${fmt(cost)}</td>
+        <td><input type="number" value="${budget}" style="width:110px" onchange="updateBudget('${s.name}',+this.value)"></td>
+        <td style="color:${usage>100?'var(--danger)':(usage>90?'var(--warning)':'var(--success)')};font-weight:600">${usage.toFixed(1)}%</td></tr>`;
+    });
+    html+=`</tbody></table></div></div>`;
+  }
+
+  // 各浆站明细
+  html += `<div class="card"><h3>${isStation?'':'各浆站'}成本 vs 预算 明细（按使用率排序）</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>浆站</th><th>省份</th><th>人数</th><th>夯实率</th><th>年度成本</th><th>年度预算</th><th>使用率</th><th>差额</th><th>1-7月实际</th><th>预算执行率</th><th>状态</th></tr></thead><tbody>`;
+  // 按使用率从高到低排序（超支站优先展示）
+  stationData.sort((a,b)=> b.usageRate - a.usageRate);
+  let totalYtdActualTbl = 0;
+  stationData.forEach(d=>{
+    const s = d.station;
+    const diff = d.budget - d.cost;
+    const statusClass = d.usageRate>100?'badge-err':(d.usageRate>90?'badge-warn':'badge-ok');
+    const statusText = d.usageRate>100?'超支':(d.usageRate>90?'接近上限':'正常');
+    const ytdStr = d.ytdActual > 0 ? '¥'+fmt(d.ytdActual) : '-';
+    const execStr = d.ytdBudget > 0 ? d.execRate.toFixed(1)+'%' : '-';
+    const execColor = d.ytdBudget > 0 ? (d.execRate > 58.3 ? 'var(--danger)' : 'var(--success)') : 'var(--text-light)';
+    totalYtdActualTbl += d.ytdActual;
+    html+=`<tr>
+      <td style="font-weight:600">${s.name}浆站</td><td>${s.province}</td><td>${STAFF_COUNTS[s.name]||'-'}</td>
+      <td>${s.actual}%</td>
+      <td>¥${fmt(d.cost)}</td><td>¥${fmt(d.budget)}</td>
+      <td style="font-weight:700;color:${d.usageRate>100?'var(--danger)':(d.usageRate>90?'var(--warning)':'var(--success)')}">${d.usageRate.toFixed(1)}%</td>
+      <td style="color:${diff>=0?'var(--success)':'var(--danger)'}">¥${diff>=0?'':'-'}${fmt(Math.abs(diff))}</td>
+      <td style="font-weight:600;color:var(--warning)">${ytdStr}</td>
+      <td style="font-weight:700;color:${execColor}">${execStr}</td>
+      <td><span class="badge ${statusClass}">${statusText}</span></td></tr>`;
+  });
+  // 合计行
+  const totalExecRateTbl = totalBudget > 0 ? (totalYtdActualTbl / totalBudget * 100) : 0;
+  html+=`<tr style="font-weight:700;background:#f0f7ff">
+    <td>合计</td><td></td><td>${stationList.reduce((a,s)=>a+(STAFF_COUNTS[s.name]||0),0)}</td><td></td>
+    <td>¥${fmt(totalCost)}</td><td>¥${fmt(totalBudget)}</td>
+    <td style="color:${totalUsageRate>100?'var(--danger)':'var(--success)'}">${totalUsageRate.toFixed(1)}%</td>
+    <td style="color:${totalBudget-totalCost>=0?'var(--success)':'var(--danger)'}">¥${fmt(Math.abs(totalBudget-totalCost))}</td>
+    <td style="color:var(--warning)">¥${fmt(totalYtdActualTbl)}</td>
+    <td style="color:${totalExecRateTbl>58.3?'var(--danger)':'var(--success)'}">${totalExecRateTbl.toFixed(1)}%</td>
+    <td></td></tr>`;
+  html+=`</tbody></table></div>
+    <div style="margin-top:16px"><canvas id="chartCompanyDetail" height="300"></canvas></div>
+  </div>`;
+
+  // 图示说明
+  html += `<div class="card" style="background:#f8fafc">
+    <h3>📖 看板说明</h3>
+    <div style="font-size:13px;color:var(--text);line-height:1.8">
+      <p><b>年度社保成本</b> = 在岗人数 × 当地基数 × 单位费率合计 × 12个月 × (夯实率/100)</p>
+      <p><b>预算使用率</b> = 实际成本 ÷ 年度预算 × 100%。超过100%表示超支。</p>
+      <p><b>动态联动</b>：在分层测算、费率速查等页面调整基数或比例后，此处的成本数据会自动同步更新。</p>
+      <p><b>参考预算</b>：默认按全员70%夯实率估算。管理员可在上方"预算设置"中手动调整各站预算。</p>
+    </div>
+  </div>`;
+
+  panel.innerHTML=html;
+
+  // 图表：成本vs预算 对比柱状图
+  setTimeout(()=>{
+    destroyChart('companyOverview');
+    const ctxO=document.getElementById('chartCompanyOverview');
+    if(ctxO){
+      chartInstances['companyOverview']=new Chart(ctxO,{type:'bar',
+        data:{labels:['年度成本','年度预算'],
+          datasets:[{data:[totalCost,totalBudget],backgroundColor:['rgba(59,130,246,0.7)','rgba(16,185,129,0.7)'],borderWidth:0,borderRadius:6}]},
+        options:{responsive:true,plugins:{legend:{display:false},
+          tooltip:{callbacks:{label:function(c){return '¥'+fmt(c.raw)}}}},
+          scales:{y:{beginAtZero:true,ticks:{callback:function(v){return '¥'+(v>=10000?(v/10000).toFixed(1)+'万':v)}}},x:{grid:{display:false}}}}
+      });
+    }
+    destroyChart('companyDetail');
+    const ctxD=document.getElementById('chartCompanyDetail');
+    if(ctxD){
+      const labels = stationData.map(d=>d.station.name);
+      const costs = stationData.map(d=>d.cost);
+      const budgetArr = stationData.map(d=>d.budget);
+      const chartH2 = Math.max(200, stationData.length * 40);
+      ctxD.parentElement.style.height = chartH2 + 'px';
+      const ytdArr = stationData.map(d=>d.ytdActual);
+      chartInstances['companyDetail']=new Chart(ctxD,{type:'bar',
+        data:{labels,datasets:[
+          {label:'年度成本',data:costs,backgroundColor:'rgba(59,130,246,0.6)',borderRadius:3},
+          {label:'年度预算',data:budgetArr,backgroundColor:'rgba(16,185,129,0.4)',borderRadius:3,borderColor:'rgba(16,185,129,0.8)',borderWidth:1},
+          {label:'1-7月实际',data:ytdArr,backgroundColor:'rgba(245,158,11,0.5)',borderRadius:3,borderColor:'rgba(245,158,11,0.8)',borderWidth:1}
+        ]},
+        options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{position:'top'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': ¥'+fmt(c.raw)}}}},
+          scales:{x:{beginAtZero:true,ticks:{callback:function(v){return v>=10000?(v/10000).toFixed(0)+'万':v}}},
+            y:{ticks:{font:{size:11}},afterFit(axis){axis.width=80;}}}}
+      });
+    }
+  },200);
+}
+
+function updateBudget(stationName, val){
+  var budgets = getBudgets();
+  budgets[stationName] = val;
+  saveBudgets(budgets);
+  renderCompany();
+}
+function resetBudgets(){
+  localStorage.removeItem('ss7_budgets');
+  renderCompany();
+}
+
+// ============ PANEL: SUGGEST ============
+function renderSuggest(){
+  const panel=document.getElementById('panel-suggest');
+  const isStation = currentUser.role==='station_manager';
+  if(!canSeeAll() && !isStation){panel.innerHTML='';return;}
+  const reqRate=70;
+  const risks=STATIONS.map(s=>{const gap=reqRate-s.actual;let level;if(gap<=0)level='green';else if(gap<=5)level='yellow';else if(gap<=15)level='orange';else level='red';return{...s,gap,level};}).sort((a,b)=>b.gap-a.gap);
+  // For station managers, only show their own station's data
+  const myStationName = currentUser.station;
+  const displayRisks = isStation ? risks.filter(r=>r.name===myStationName) : risks;
+  const displayReds = displayRisks.filter(r=>r.level==='red');
+  const displayOranges = displayRisks.filter(r=>r.level==='orange');
+  const displayYellows = displayRisks.filter(r=>r.level==='yellow');
+  const displayGreens = displayRisks.filter(r=>r.level==='green');
+
+  // === Station manager optimization suggestions ===
+  let html = '';
+  if(isStation){
+    const st = getStationInfo(myStationName);
+    const actual = st.actual;
+    const province = st.province;
+    const unitRate = getUnitRate(province);
+    const budgets = getBudgets();
+    const budget = budgets[myStationName] || 0;
+    const cost = getStationAnnualCost(st);
+
+    html+=`<div class="card"><h3>📋 本站优化建议</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+        <span class="policy-badge local">本站：${myStationName}浆站（${st.city}）</span>
+        <span class="policy-badge local">所在省份：${province}</span>
+        <span class="policy-badge ${actual>=70?'national':'diff'}">当前夯实率：${actual}%</span>
+        <span class="policy-badge ${actual>=70?'national':'diff'}">单位费率合计：${unitRate.toFixed(1)}%</span>
+      </div>
+      <div style="font-size:14px;line-height:2;color:#374151">`;
+
+    // Level-based suggestions
+    if(actual < 70){
+      const gapToTarget = (70 - actual).toFixed(2);
+      html+=`<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:14px;margin-bottom:12px">
+        <b style="color:#991b1b">⚠️ 夯实率不达标</b><br>
+        当前夯实率 ${actual}% 低于2026年要求的70%，差距 <b>${gapToTarget}%</b>。
+        建议尽快将缴费基数提升至当地最低标准（${st.minBase}元/月），避免合规风险。
+        若持续不达标，可能面临社保稽核补缴及滞纳金风险。
+      </div>`;
+    } else if(actual < 70 + 5){
+      html+=`<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;margin-bottom:12px">
+        <b style="color:#92400e">⚠️ 接近达标线</b><br>
+        当前夯实率 ${actual}% 虽已达标，但距离70%仅有 ${(actual-70).toFixed(2)}% 的余量。
+        建议微调基数即可稳固达标，例如将部分低基数岗位上调至最低标准以上。
+      </div>`;
+    } else if(actual < 80){
+      html+=`<div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:14px;margin-bottom:12px">
+        <b style="color:#1e40af">🔵 已达标但仍有提升空间</b><br>
+        当前夯实率 ${actual}% 已达标，但距离2027年80%要求仍有差距。
+        建议提前规划提升方案，分阶段逐步提高基数，确保2027年前达到80%。
+      </div>`;
+    } else {
+      html+=`<div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:14px;margin-bottom:12px">
+        <b style="color:#065f46">✅ 达标情况良好</b><br>
+        当前夯实率 ${actual}% 表现优秀，已超过2027年80%的要求。可维持当前方案，
+        继续关注2028年90%及长期100%的合规目标。
+      </div>`;
+    }
+
+    // Layered adjustment suggestions based on province rates
+    html+=`<div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">
+      <b>📊 分层调整方向建议</b><br>
+      <span style="font-size:13px;color:var(--text-light)">${province}单位费率合计 ${unitRate.toFixed(1)}%，`;
+    if(unitRate >= 23){
+      html+=`费率偏高，每提升1%夯实率带来的成本增幅较大。建议优先提升经营层和管理层的夯实率，
+        以较少的人数覆盖较高的合规比例，控制总成本增长。</span></div>`;
+    } else if(unitRate >= 21){
+      html+=`费率处于中等水平。可考虑对全员进行适度微调，在成本可控范围内提升整体达标率。
+        同时关注经营层夯实率，确保管理层合规。</span></div>`;
+    } else {
+      html+=`费率较低，提升基数的成本压力相对较小。建议积极提高全员夯实率，
+        适当提高经营层和管理层基数可显著提升合规表现。</span></div>`;
+    }
+
+    // Cost vs budget status
+    html+=`<div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">
+      <b>💰 当前成本 vs 预算状态</b><br>
+      <span style="font-size:13px">年度社保成本（单位部分）：<b>¥${fmt(cost)}</b>`;
+    if(budget > 0){
+      const usageRate = (cost / budget * 100).toFixed(1);
+      const diff = cost - budget;
+      if(diff <= 0){
+        html+=` | 年度预算：<b>¥${fmt(budget)}</b> | <span style="color:var(--success);font-weight:600">✅ 预算充裕，结余 ¥${fmt(Math.abs(diff))}（使用率 ${usageRate}%）</span>`;
+      } else {
+        html+=` | 年度预算：<b>¥${fmt(budget)}</b> | <span style="color:var(--danger);font-weight:600">⚠️ 超出预算 ¥${fmt(diff)}（使用率 ${usageRate}%）</span>`;
+      }
+    } else {
+      html+=` | 未设置预算`;
+    }
+    html+=`</span></div>`;
+
+    // === 达标调整方案（按层级展示） ===
+    {
+      const totalPeople = STAFF_COUNTS[myStationName] || 0;
+      const currentRate = st.actual;
+      const minBase = st.minBase;
+      const stationUnitRate = getUnitRate(province) / 100;
+
+      let peopleNeedAdjust = 0;
+      if(currentRate < 70 && totalPeople > 0){
+        peopleNeedAdjust = Math.max(0, Math.ceil(totalPeople * (70 - currentRate) / 100));
+      }
+
+      // 获取层级人数
+      var lc = layerConfigs[myStationName];
+      if(!lc){
+        var _total = STAFF_COUNTS[myStationName] || 10;
+        var _gm = Math.max(1, Math.round(_total * 0.10));
+        var _mgmt = Math.max(1, Math.round(_total * 0.15));
+        var _mid = Math.max(1, Math.round(_total * 0.25));
+        var _emp = _total - _gm - _mgmt - _mid;
+        lc = {gm:{count:_gm},mgmt:{count:_mgmt},mid:{count:_mid},emp:{count:_emp>0?_emp:1}};
+      }
+      var layers = [
+        {key:'emp',label:'员工级',count:lc.emp.count},
+        {key:'mid',label:'中层级',count:lc.mid.count},
+        {key:'mgmt',label:'经营层',count:lc.mgmt.count},
+        {key:'gm',label:'总经理级',count:lc.gm.count}
+      ];
+
+      // 按成本从低到高分配需调整人数
+      var remaining = peopleNeedAdjust;
+      layers.forEach(function(la){ la.adjust = 0; });
+      for(var li=0; li<layers.length && remaining>0; li++){
+        var canAdj = Math.min(layers[li].count, remaining);
+        layers[li].adjust = canAdj;
+        remaining -= canAdj;
+      }
+
+      var curBase = st.base;
+      var monthlyCost = 0;
+      layers.forEach(function(la){
+        la.monthInc = la.adjust * (minBase - curBase) * stationUnitRate;
+        monthlyCost += la.monthInc;
+      });
+      var annualCost = monthlyCost * 12;
+
+      if(peopleNeedAdjust <= 0){
+        html+='<div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:14px;margin-bottom:12px"><b style="color:#065f46">✅ 当前已达标，无需调整</b><br><span style="font-size:13px">本站夯实率已达到70%的2026年要求，建议维持当前方案。</span></div>';
+      } else {
+        html+='<div style="background:#e0f2fe;border:1px solid #7dd3fc;border-radius:8px;padding:14px;margin-bottom:12px">';
+        html+='<b>🎯 达标调整方案</b>';
+        html+='<div style="font-size:12px;color:var(--text-light);margin:6px 0 10px">调整策略：优先调整员工级基数至当地最低标准</div>';
+        html+='<div class="tbl-wrap"><table style="font-size:13px">';
+        html+='<thead><tr><th>层级</th><th>层级人数</th><th>需调整</th><th>当前基数</th><th>调至基数</th><th>月增成本</th><th>年增成本</th></tr></thead><tbody>';
+        var totalAdjPeople = 0;
+        layers.forEach(function(la){
+          totalAdjPeople += la.adjust;
+          var adjBaseStr = la.adjust > 0 ? '¥'+fmt(minBase) : '-';
+          var monthStr = la.adjust > 0 ? '¥'+fmt(la.monthInc) : '-';
+          var yearStr = la.adjust > 0 ? '¥'+fmt(la.monthInc*12) : '-';
+          html+='<tr'+(la.adjust>0?' style="background:#fff7ed"':'')+'>';
+          html+='<td style="font-weight:600">'+la.label+'</td>';
+          html+='<td>'+la.count+'</td>';
+          html+='<td style="font-weight:600;color:'+(la.adjust>0?'var(--danger)':'var(--text-light)')+'">'+la.adjust+'</td>';
+          html+='<td>¥'+fmt(curBase)+'</td>';
+          html+='<td>'+adjBaseStr+'</td>';
+          html+='<td style="font-weight:600">'+monthStr+'</td>';
+          html+='<td>'+yearStr+'</td>';
+          html+='</tr>';
+        });
+        html+='<tr style="font-weight:700;background:#f0f7ff"><td>合计</td><td>'+totalPeople+'</td><td style="color:var(--danger)">'+totalAdjPeople+'</td><td></td><td></td><td style="color:var(--danger)">¥'+fmt(monthlyCost)+'</td><td style="color:var(--danger)">¥'+fmt(annualCost)+'</td></tr>';
+        html+='</tbody></table></div>';
+        html+='<div style="margin-top:10px;font-size:13px">调整后可达达标率：<b style="color:var(--success)">70% ✅</b></div>';
+        html+='<div style="margin-top:6px;font-size:12px;color:var(--text-light)">💡 说明：将 '+totalAdjPeople+' 名员工的缴费基数从当前水平提升至当地最低基数 '+minBase+' 元，即可达到70%达标要求。</div>';
+        html+='</div>';
+      }
+    }
+
+    html+=`</div></div>`;
+  }
+
+  let html2=`<div class="card"><h3>风险分级总览</h3><div class="stats-row">
+    <div class="stat-card red"><div class="num">${displayReds.length}</div><div class="label">高风险（差距>15%）</div></div>
+    <div class="stat-card orange"><div class="num">${displayOranges.length}</div><div class="label">中风险（5-15%）</div></div>
+    <div class="stat-card"><div class="num" style="color:#eab308">${displayYellows.length}</div><div class="label">低风险（<5%）</div></div>
+    <div class="stat-card green"><div class="num">${displayGreens.length}</div><div class="label">已达标</div></div></div></div>`;
+
+  function riskBlock(items,color,emoji,title){
+    if(!items.length)return'';
+    let h=`<div class="card" style="border-left:4px solid ${color}"><h3 style="color:${color}">${emoji} ${title}</h3>`;
+    items.forEach(s=>{h+=`<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><b>${s.name}浆站</b>（${s.province} · ${s.city}）<span>要求70% / 当前${s.actual}% / 差距 <b style="color:${color}">${s.gap.toFixed(2)}%</b></span></div></div>`;});
+    return h+`</div>`;
+  }
+  html2+=riskBlock(displayReds,'#ef4444','🔴','高风险浆站（差距>15%）');
+  html2+=riskBlock(displayOranges,'#f59e0b','🟠','中风险浆站（差距5-15%）');
+  html2+=riskBlock(displayYellows,'#eab308','🟡','低风险浆站（差距<5%）');
+
+  html2+=`<div class="card"><h3>达标路线图</h3><div class="tbl-wrap"><table>
+    <thead><tr><th>浆站</th><th>所在县市</th><th>当前%</th><th>要求%</th><th>差距</th><th>优先级</th></tr></thead><tbody>`;
+  displayRisks.filter(r=>r.level!=='green').forEach(s=>{
+    const priority=s.gap>15?'🔴 紧急':(s.gap>5?'🟠 重要':'🟡 一般');
+    html2+=`<tr><td style="font-weight:600">${s.name}浆站</td><td>${s.city}</td><td>${s.actual}%</td><td>${reqRate}%</td>
+      <td style="color:var(--danger)">${s.gap.toFixed(2)}%</td><td>${priority}</td></tr>`;
+  });
+  html2+=`</tbody></table></div></div>`;
+
+  // === 重点浆站提升方案（仅经营层/管理员可见） ===
+  if(!isStation){
+    const priorityStations = risks.filter(r => r.level === 'red' || r.level === 'orange').slice(0, 3);
+
+    let priorityHtml = '<div class="card"><h3>🏢 重点浆站提升方案（Top '+priorityStations.length+'）</h3>';
+    priorityHtml += '<p style="font-size:13px;color:var(--text-light);margin-bottom:14px">以下浆站夯实率缺口较大，建议优先关注并制定提升计划：</p>';
+
+    if(priorityStations.length === 0){
+      priorityHtml += '<div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:14px"><b style="color:#065f46">✅ 所有浆站均已达标或风险较低</b><br><span style="font-size:13px">当前无需重点关注的高风险浆站。</span></div>';
+    }
+
+    let totalPeopleAll = 0, totalCostMonthlyAll = 0, newlyCompliantCount = 0;
+
+    // Helper: generate layer adjustment table for a station
+    function buildLayerTable(sName, sInfo, peopleNeed){
+      var lc = layerConfigs[sName];
+      if(!lc){
+        var _t = STAFF_COUNTS[sName] || 10;
+        var _g = Math.max(1, Math.round(_t * 0.10));
+        var _m = Math.max(1, Math.round(_t * 0.15));
+        var _d = Math.max(1, Math.round(_t * 0.25));
+        var _e = _t - _g - _m - _d;
+        lc = {gm:{count:_g},mgmt:{count:_m},mid:{count:_d},emp:{count:_e>0?_e:1}};
+      }
+      var lays = [
+        {key:'emp',label:'员工级',count:lc.emp.count},
+        {key:'mid',label:'中层级',count:lc.mid.count},
+        {key:'mgmt',label:'经营层',count:lc.mgmt.count},
+        {key:'gm',label:'总经理级',count:lc.gm.count}
+      ];
+      var rem = peopleNeed;
+      lays.forEach(function(la){ la.adjust = 0; });
+      for(var i=0; i<lays.length && rem>0; i++){
+        var can = Math.min(lays[i].count, rem);
+        lays[i].adjust = can;
+        rem -= can;
+      }
+      // 估算低于最低基数人员的平均当前基数（按最低基数的60%估算）
+      var cb = +(sInfo.minBase * 0.6).toFixed(2);
+      var ur = getUnitRate(sInfo.province) / 100;
+      var mc = 0;
+      lays.forEach(function(la){
+        la.monthInc = la.adjust * (sInfo.minBase - cb) * ur;
+        mc += la.monthInc;
+      });
+      var totalAdj = 0;
+      var tb = '<div class="tbl-wrap"><table style="font-size:12px;margin-top:8px">';
+      tb += '<thead><tr><th>层级</th><th>人数</th><th>需调</th><th>基数→调至</th><th>月增成本</th></tr></thead><tbody>';
+      lays.forEach(function(la){
+        totalAdj += la.adjust;
+        var baseStr = la.adjust > 0 ? '¥'+fmt(cb)+'→¥'+fmt(sInfo.minBase) : '-';
+        var mStr = la.adjust > 0 ? '¥'+fmt(la.monthInc) : '-';
+        tb += '<tr'+(la.adjust>0?' style="background:#fff7ed"':'')+'>';
+        tb += '<td style="font-weight:600">'+la.label+'</td>';
+        tb += '<td>'+la.count+'</td>';
+        tb += '<td style="font-weight:600;color:'+(la.adjust>0?'var(--danger)':'var(--text-light)')+'">'+la.adjust+'</td>';
+        tb += '<td>'+baseStr+'</td>';
+        tb += '<td style="font-weight:600">'+mStr+'</td>';
+        tb += '</tr>';
+      });
+      tb += '<tr style="font-weight:700;background:#f0f7ff"><td>合计</td><td>'+(lays.reduce(function(a,l){return a+l.count},0))+'</td><td style="color:var(--danger)">'+totalAdj+'</td><td></td><td style="color:var(--danger)">¥'+fmt(mc)+'/月</td></tr>';
+      tb += '</tbody></table></div>';
+      return {html: tb, monthlyCost: mc, totalAdj: totalAdj};
+    }
+
+    priorityStations.forEach(function(s){
+      var tp = STAFF_COUNTS[s.name] || 0;
+      var cr = s.actual;
+      var pna = 0;
+      if(cr < 70 && tp > 0){
+        pna = Math.max(0, Math.ceil(tp * (70 - cr) / 100));
+      }
+      var ur = getUnitRate(s.province) / 100;
+      var mcm = pna * (s.minBase - s.base) * ur;
+
+      totalPeopleAll += pna;
+      totalCostMonthlyAll += mcm;
+      if(s.actual < 70 && pna > 0) newlyCompliantCount++;
+
+      var badgeClass = s.level==='red' ? 'badge-err' : 'badge-warn';
+      var badgeText = s.level==='red' ? '高风险' : '中风险';
+
+      priorityHtml += '<div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px">';
+      priorityHtml += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+      priorityHtml += '<b style="font-size:15px">'+s.name+'浆站</b>';
+      priorityHtml += '<span class="badge '+badgeClass+'">'+badgeText+'</span></div>';
+      priorityHtml += '<div style="font-size:13px;color:var(--text-light);margin-bottom:10px">'+s.province+' · '+s.city+' | 当前夯实率 <b style="color:var(--danger)">'+s.actual+'%</b> | 目标70% | 差距 <b>'+s.gap.toFixed(2)+'%</b></div>';
+
+      if(pna > 0){
+        var layerResult = buildLayerTable(s.name, s, pna);
+        priorityHtml += '<div style="font-size:13px;font-weight:600;margin-bottom:4px">调整方案：</div>';
+        priorityHtml += layerResult.html;
+        priorityHtml += '<div style="margin-top:8px;font-size:13px">调整后达标率：<b style="color:var(--success)">70% ✅</b></div>';
+      } else {
+        priorityHtml += '<div style="font-size:13px;color:var(--success)">✅ 已达标，无需调整</div>';
+      }
+      priorityHtml += '</div>';
+    });
+
+    // Summary block
+    if(priorityStations.length > 0){
+      priorityHtml += '<div style="background:#e0f2fe;border:1px solid #7dd3fc;border-radius:8px;padding:14px;margin-top:16px">';
+      priorityHtml += '<b>📊 汇总（以上 '+priorityStations.length+' 个浆站）</b>';
+      priorityHtml += '<div style="margin-top:10px;font-size:13px">';
+      priorityHtml += '需调整总人数：<b>'+totalPeopleAll+' 人</b><br>';
+      priorityHtml += '每月总增加成本：<b style="color:var(--danger)">¥'+fmt(totalCostMonthlyAll)+'</b><br>';
+      priorityHtml += '每年总增加成本：<b style="color:var(--danger)">¥'+fmt(totalCostMonthlyAll*12)+'</b><br>';
+      priorityHtml += '全部调整后可新增达标浆站：<b style="color:var(--success)">'+newlyCompliantCount+' 个</b>';
+      priorityHtml += '</div></div>';
+    }
+
+    priorityHtml += '</div>';
+    html += priorityHtml;
+  }
+
+  html+=html2;
+  panel.innerHTML=html;
+}
+
+// ============ PANEL: RATE ============
+function renderPanelRate(){
+  const panel=document.getElementById('panel-rate');
+  let html=`<div class="card"><h3>省级费率速查表</h3>
+    <p style="font-size:12px;color:var(--text-light);margin-bottom:12px">各省社保费率（可编辑，修改后自动保存）</p>
+    <div class="tbl-wrap"><table><thead><tr><th>省份</th><th>养老(单位)</th><th>养老(个人)</th><th>医疗(单位)</th><th>医疗(个人)</th><th>失业(单位)</th><th>失业(个人)</th><th>工伤(单位)</th><th>合计(单位)</th><th>合计(个人)</th></tr></thead><tbody>`;
+  for(const[prov,r]of Object.entries(rates)){
+    const tc=r.pension_c+r.medical_c+r.unemp_c+r.injury_c;const tp=r.pension_p+r.medical_p+r.unemp_p+(r.injury_p||0);
+    html+=`<tr><td style="font-weight:600">${prov}</td>
+      <td><input type="number" value="${r.pension_c}" style="width:56px" onchange="editRate('${prov}','pension_c',+this.value)"></td>
+      <td><input type="number" value="${r.pension_p}" style="width:56px" onchange="editRate('${prov}','pension_p',+this.value)"></td>
+      <td><input type="number" value="${r.medical_c}" style="width:56px" onchange="editRate('${prov}','medical_c',+this.value)"></td>
+      <td><input type="number" value="${r.medical_p}" style="width:56px" onchange="editRate('${prov}','medical_p',+this.value)"></td>
+      <td><input type="number" value="${r.unemp_c}" style="width:56px" onchange="editRate('${prov}','unemp_c',+this.value)"></td>
+      <td><input type="number" value="${r.unemp_p}" style="width:56px" onchange="editRate('${prov}','unemp_p',+this.value)"></td>
+      <td><input type="number" value="${r.injury_c}" style="width:56px" onchange="editRate('${prov}','injury_c',+this.value)"></td>
+      <td style="font-weight:700;color:var(--primary)">${tc.toFixed(1)}%</td><td style="font-weight:700;color:var(--text-light)">${tp.toFixed(1)}%</td></tr>`;
+  }
+  html+=`</tbody></table></div></div>`;
+
+  html+=`<div class="card"><h3>省级费率汇总对比</h3><div class="tbl-wrap"><table>
+    <thead><tr><th>省份</th><th>养老(单位)</th><th>医疗(单位)</th><th>失业(单位)</th><th>工伤(单位)</th><th>生育(单位)</th><th>合计(单位)</th><th>个人合计</th></tr></thead><tbody>`;
+  for(const[prov,r]of Object.entries(rates)){
+    const tc=r.pension_c+r.medical_c+r.unemp_c+r.injury_c;const tp=r.pension_p+r.medical_p+r.unemp_p+(r.injury_p||0);
+    var fmtRate=function(v){return Number(v).toFixed(1);};
+    const injMax=prov==='广东'?'1.4%':'1.9%';const medR=prov==='浙江'?'8.5%-9.5%':Number(r.medical_c).toFixed(1)+'%';
+    const tcMin=r.pension_c+r.medical_c+r.unemp_c+0.2;const tcMax=r.pension_c+(prov==='浙江'?9.5:r.medical_c)+r.unemp_c+1.9;
+    html+=`<tr><td style="font-weight:600">${prov}</td><td>${fmtRate(r.pension_c)}%</td><td>${medR}</td><td>${fmtRate(r.unemp_c)}%</td><td>0.2%-${injMax}</td><td>0%</td>
+      <td style="font-weight:700;color:var(--primary)">${tcMin.toFixed(1)}%-${tcMax.toFixed(1)}%</td><td style="font-weight:700;color:var(--text-light)">${tp.toFixed(1)}%</td></tr>`;
+  }
+  html+=`</tbody></table></div></div>`;
+  // 最低社保基数表（从首页移过来）
+  html += renderMinBaseSection();
+  panel.innerHTML=html;
+}
+
+function editRate(p,f,v){rates[p][f]=v;saveRates();renderPanelRate();}
+
+// ============ PANEL: ARBITRATION CASES ============
+function renderCasePanel(){
+  const panel = document.getElementById('panel-case');
+  const isStation = currentUser.role==='station_manager';
+
+  let html = `<div class="card"><h3>⚖️ 社保仲裁案例</h3>
+    <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">${isStation ? '以下为本浆站所在区域的典型社保仲裁案例，供参考防范用工风险。' : '以下为各浆站所在地典型社保仲裁案例，供站长参考，防范用工风险。'}</p>`;
+
+  // Filter cases for station manager
+  let filteredCases = ARBITRATION_CASES;
+  if(isStation){
+    const mySt = getStationInfo(currentUser.station);
+    const myProv = mySt?.province;
+    filteredCases = ARBITRATION_CASES.filter(c => c.province === myProv);
+  }
+
+  // Group by province
+  const provGroups = {};
+  filteredCases.forEach(c=>{
+    if(!provGroups[c.province])provGroups[c.province]=[];
+    provGroups[c.province].push(c);
+  });
+
+  for(const[prov,cases]of Object.entries(provGroups)){
+    html+=`<div style="margin-bottom:20px"><h4 style="font-size:14px;color:#1e40af;margin-bottom:12px;padding:8px 12px;background:#e8f0fe;border-radius:6px">📍 ${prov}地区</h4>`;
+    cases.forEach(c=>{
+      const regionText = c.regions ? c.regions.join(' / ') : c.region || '';
+      html+=`<div class="case-card">
+        <h4><span class="badge badge-err">案例</span>${c.title}</h4>
+        <div class="case-meta">
+          <span>📋 ${c.caseNo}</span>
+          <span>📅 ${c.date || ''}</span>
+          <span>📍 ${regionText}</span>
+          <span>💰 赔付金额：<b style="color:var(--danger)">${c.amount}</b></span>
+        </div>
+        <div class="case-body">
+          <p><b>案情摘要：</b>${c.summary}</p>
+          <p style="margin-top:6px"><b>争议焦点：</b>${c.dispute}</p>
+        </div>
+        <div class="case-result">
+          <b>裁决结果：</b>${c.result}<br>
+          ${c.legal?`<b>法律依据：</b><span style="color:var(--text-light)">${c.legal}</span><br>`:''}
+          <b style="color:var(--primary)">⚠️ 关键启示：</b>${c.key}
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+  html+=`</div>`;
+
+  // Section B: Compensation standards
+  html+=`<div class="card"><h3>📊 社保仲裁赔付标准</h3>
+    <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">未依法缴纳社保可能面临的法律后果及赔付标准</p>
+
+    <div class="std-card">
+      <h4>1. 补缴社保差额 + 滞纳金</h4>
+      <p>用人单位未足额缴纳社保费的，由社保行政部门责令限期补缴，并自欠缴之日起按<b>每日万分之五（0.05%）</b>加收滞纳金。逾期仍不缴纳的，处欠缴数额1倍以上3倍以下罚款。</p>
+    </div>
+
+    <div class="std-card">
+      <h4>2. 经济补偿金</h4>
+      <p>劳动者以"未依法缴纳社会保险费"为由解除劳动合同的（《劳动合同法》第38条），用人单位需支付经济补偿金：<br>
+      <b>计算公式：工作年限 × 离职前12个月平均工资</b><br>
+      每满一年支付一个月工资；六个月以上不满一年的按一年计算；不满六个月的支付半个月工资。</p>
+    </div>
+
+    <div class="std-card">
+      <h4>3. 社保差额导致的医疗费用损失</h4>
+      <p>因用人单位未足额缴纳医疗保险，导致员工医疗报销待遇降低的，<b>差额部分由用人单位全额赔偿</b>。包括但不限于：门诊费用差额、住院费用差额、特殊病种待遇差额等。</p>
+    </div>
+
+    <div class="std-card">
+      <h4>4. 工伤保险待遇差额</h4>
+      <p>用人单位未按实际工资缴纳工伤保险的，工伤职工的一次性伤残补助金、伤残津贴、医疗补助金等待遇按<b>实际工资标准</b>计算，差额部分由用人单位补足。</p>
+    </div>
+
+    <div class="std-card">
+      <h4>5. 养老金待遇损失赔偿</h4>
+      <p>因单位未足额缴纳养老保险导致员工退休后养老金降低的，员工可要求单位<b>一次性赔偿养老金差额损失</b>。计算方式：月差额 × 预期领取月数（一般按12-20年计算）。安徽地区按 ∑少报缴费基数×8%×15 计算。</p>
+    </div>
+
+    <div class="std-card">
+      <h4>6. 仲裁时效说明</h4>
+      <p>劳动争议申请仲裁的时效期间为<b>1年</b>，自当事人知道或应当知道其权利被侵害之日起计算。但劳动报酬争议在劳动关系存续期间不受1年时效限制。社保补缴一般<b>不受仲裁时效限制</b>。</p>
+    </div>
+  </div>`;
+
+  // Summary table with explanations
+  html+=`<div class="card"><h3>赔付标准速查表</h3>
+    <p style="font-size:12px;color:var(--text-light);margin-bottom:14px">下表列出未依法缴纳社保可能涉及的各项赔付/补偿项目，每项均附释义说明，方便站长快速了解风险敞口。⚠️ 具体赔付以当地仲裁委/法院实际裁决为准。</p>
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <div class="std-card" style="border-left-color:#ef4444">
+        <h4 style="display:flex;align-items:center;gap:8px"><span class="badge badge-err">1</span> 补缴社保差额 + 滞纳金</h4>
+        <p style="margin-bottom:8px"><b>含义：</b>单位未足额缴纳社保费时，社保行政部门责令限期补缴欠缴部分，并按日加收滞纳金。</p>
+        <p style="margin-bottom:8px"><b>适用情形：</b>按最低基数而非实际工资缴社保、少报参保人数、漏缴险种等。</p>
+        <p><b>计算方式：</b>滞纳金 = 欠缴金额 × 0.05%/天（自欠缴之日起算）；逾期不缴的，处欠缴数额1~3倍罚款。<br>
+        <span style="color:var(--text-light);font-size:12px">依据：《社会保险法》第86条</span></p>
+      </div>
+
+      <div class="std-card" style="border-left-color:#f59e0b">
+        <h4 style="display:flex;align-items:center;gap:8px"><span class="badge badge-warn">2</span> 经济补偿金</h4>
+        <p style="margin-bottom:8px"><b>含义：</b>劳动者以"未依法缴纳社保"为由被迫解除劳动合同时，单位需按工作年限支付的经济补偿。</p>
+        <p style="margin-bottom:8px"><b>适用情形：</b>员工因单位未缴/未足额缴社保而主动提出离职（《劳动合同法》第38条），无需提前30天通知即可立即解除。</p>
+        <p><b>计算方式：</b>补偿金 = 工作年限 × 离职前12个月平均工资。每满1年付1个月；6个月以上不满1年按1年算；不满6个月付半个月。<br>
+        <span style="color:var(--text-light);font-size:12px">依据：《劳动合同法》第38条、第46条、第47条</span></p>
+      </div>
+
+      <div class="std-card" style="border-left-color:#3b82f6">
+        <h4 style="display:flex;align-items:center;gap:8px"><span class="badge" style="background:#dbeafe;color:#1e40af">3</span> 一次性伤残补助金</h4>
+        <p style="margin-bottom:8px"><b>含义：</b>职工因工致残被鉴定为1~10级伤残后，由工伤保险基金一次性支付的伤残补助。若单位未按实际工资缴工伤保险，差额由单位补足。</p>
+        <p style="margin-bottom:8px"><b>适用情形：</b>工伤发生后经劳动能力鉴定构成伤残等级。常见于浆站驾驶、设备操作等岗位。</p>
+        <p><b>计算方式：</b>补助金 = 本人工资 × 月数（1级27个月、2级25个月…10级7个月）。"本人工资"指工伤前12个月平均月缴费工资；若缴费基数低于实际工资，差额由用人单位补足。<br>
+        <span style="color:var(--text-light);font-size:12px">依据：《工伤保险条例》第35~37条、第62条</span></p>
+      </div>
+
+      <div class="std-card" style="border-left-color:#3b82f6">
+        <h4 style="display:flex;align-items:center;gap:8px"><span class="badge" style="background:#dbeafe;color:#1e40af">4</span> 一次性工伤医疗补助金 + 就业补助金</h4>
+        <p style="margin-bottom:8px"><b>含义：</b>5~10级伤残职工与单位解除或终止劳动关系时，由工伤保险基金支付一次性工伤医疗补助金，由用人单位支付一次性伤残就业补助金。</p>
+        <p style="margin-bottom:8px"><b>适用情形：</b>伤残职工离职时触发。各省标准不同，一般按解除时上年度社平工资×若干月计算。</p>
+        <p><b>计算方式：</b>医疗补助金 + 就业补助金，具体月数由省级规定（如安徽5~6级医疗补助金分别为20、18个月；就业补助金分别为20、18个月）。若单位未缴工伤保险，全部费用由单位承担。<br>
+        <span style="color:var(--text-light);font-size:12px">依据：《工伤保险条例》第36~37条；各省工伤保险实施办法</span></p>
+      </div>
+
+      <div class="std-card" style="border-left-color:#3b82f6">
+        <h4 style="display:flex;align-items:center;gap:8px"><span class="badge" style="background:#dbeafe;color:#1e40af">5</span> 停工留薪期工资</h4>
+        <p style="margin-bottom:8px"><b>含义：</b>职工因工伤暂停工作接受治疗期间，原工资福利待遇不变，由所在单位按月支付。</p>
+        <p style="margin-bottom:8px"><b>适用情形：</b>工伤职工需要暂停工作接受治疗的，一般不超过12个月；伤情严重经批准可延长，但最长不超过24个月。</p>
+        <p><b>计算方式：</b>停工留薪期工资 = 受伤前12个月平均工资 × 停工月数。期间单位还需继续缴纳社保。若单位拒绝支付，职工可申请仲裁。<br>
+        <span style="color:var(--text-light);font-size:12px">依据：《工伤保险条例》第33条</span></p>
+      </div>
+
+      <div class="std-card" style="border-left-color:#8b5cf6">
+        <h4 style="display:flex;align-items:center;gap:8px"><span class="badge" style="background:#ede9fe;color:#5b21b6">6</span> 医保差额损失赔偿</h4>
+        <p style="margin-bottom:8px"><b>含义：</b>因单位未足额缴纳医疗保险，导致员工医保个人账户划入金额减少、住院报销比例降低的，差额部分由单位全额赔偿。</p>
+        <p style="margin-bottom:8px"><b>适用情形：</b>员工生病住院后发现医保报销金额低于应得数额，个人账户到账金额偏少。常见于长期按最低基数缴医保的单位。</p>
+        <p><b>计算方式：</b>赔偿金额 = 应报销金额 − 实际报销金额（含门诊差额、住院差额、个人账户差额等）。需提供医疗费用票据及医保结算单。<br>
+        <span style="color:var(--text-light);font-size:12px">依据：《社会保险法》第23条、第86条；《民法典》第1165条</span></p>
+      </div>
+
+      <div class="std-card" style="border-left-color:#8b5cf6">
+        <h4 style="display:flex;align-items:center;gap:8px"><span class="badge" style="background:#ede9fe;color:#5b21b6">7</span> 养老金待遇损失赔偿</h4>
+        <p style="margin-bottom:8px"><b>含义：</b>因单位未足额缴纳养老保险，导致员工退休后养老金水平降低的，员工可要求单位一次性赔偿养老金差额损失。</p>
+        <p style="margin-bottom:8px"><b>适用情形：</b>已退休或即将退休的员工发现养老金偏低，追溯发现单位在职期间未按实际工资缴养老保险。</p>
+        <p><b>计算方式：</b>一次性赔偿 = 月养老金差额 × 预期领取月数（一般按12~20年计算）。安徽地区可按 ∑少报缴费基数×8%×15 计算。也可要求单位补缴以恢复待遇。<br>
+        <span style="color:var(--text-light);font-size:12px">依据：最高法劳动争议司法解释；《社会保险法》第12条</span></p>
+      </div>
+
+      <div class="std-card" style="border-left-color:#6b7280">
+        <h4 style="display:flex;align-items:center;gap:8px"><span class="badge" style="background:#f3f4f6;color:#374151">8</span> 行政罚款（拒不补缴时）</h4>
+        <p style="margin-bottom:8px"><b>含义：</b>用人单位经社保行政部门责令限期补缴后仍不缴纳的，由行政部门处以罚款。</p>
+        <p style="margin-bottom:8px"><b>适用情形：</b>单位在收到补缴通知后逾期仍不补缴，或恶意逃避缴费义务。</p>
+        <p><b>计算方式：</b>罚款 = 欠缴社会保险费数额 × 1~3倍。同时可对直接负责的主管人员和其他直接责任人员处以500~3000元罚款。<br>
+        <span style="color:var(--text-light);font-size:12px">依据：《社会保险法》第86条</span></p>
+      </div>
+
+    </div>
+
+    <div class="tbl-wrap" style="margin-top:20px"><table>
+      <thead><tr><th>赔付项目</th><th>含义简述</th><th>适用情形</th><th>计算标准</th><th>法律依据</th></tr></thead><tbody>
+      <tr><td style="font-weight:600">补缴社保差额+滞纳金</td><td style="font-size:12px;text-align:left">限期补缴欠缴部分，按日加收滞纳金</td><td style="font-size:12px;text-align:left">按最低基数缴纳、少报人数、漏缴险种</td><td>欠缴额×0.05%/天</td><td>《社保法》第86条</td></tr>
+      <tr><td style="font-weight:600">经济补偿金</td><td style="font-size:12px;text-align:left">员工因单位未缴社保被迫离职时支付</td><td style="font-size:12px;text-align:left">员工依据第38条解除合同</td><td>工作年限×月均工资</td><td>《劳动合同法》第38/46/47条</td></tr>
+      <tr><td style="font-weight:600">一次性伤残补助金</td><td style="font-size:12px;text-align:left">因工致残1~10级的一次性补助</td><td style="font-size:12px;text-align:left">工伤后经劳动能力鉴定构成伤残</td><td>本人工资×7~27个月</td><td>《工伤保险条例》第35~37条</td></tr>
+      <tr><td style="font-weight:600">医疗补助金+就业补助金</td><td style="font-size:12px;text-align:left">5~10级伤残职工离职时支付</td><td style="font-size:12px;text-align:left">伤残职工与单位解除/终止劳动关系</td><td>各省规定（社平工资×月数）</td><td>《工伤保险条例》第36~37条</td></tr>
+      <tr><td style="font-weight:600">停工留薪期工资</td><td style="font-size:12px;text-align:left">工伤治疗期间原工资福利待遇不变</td><td style="font-size:12px;text-align:left">工伤职工暂停工作接受治疗（≤12月）</td><td>受伤前平均工资×停工月数</td><td>《工伤保险条例》第33条</td></tr>
+      <tr><td style="font-weight:600">医保差额损失赔偿</td><td style="font-size:12px;text-align:left">未足额缴医保致待遇降低的差额赔偿</td><td style="font-size:12px;text-align:left">员工报销金额低于应得数额</td><td>应报销额−实际报销额</td><td>《社保法》第23/86条</td></tr>
+      <tr><td style="font-weight:600">养老金损失赔偿</td><td style="font-size:12px;text-align:left">未足额缴养老险致退休金降低的赔偿</td><td style="font-size:12px;text-align:left">退休员工追溯在职期间缴费基数不足</td><td>月差额×预期领取月数</td><td>最高法司法解释</td></tr>
+      <tr><td style="font-weight:600">行政罚款</td><td style="font-size:12px;text-align:left">逾期不补缴时的行政处罚</td><td style="font-size:12px;text-align:left">责令补缴后仍拒不缴纳</td><td>欠缴数额1~3倍</td><td>《社保法》第86条</td></tr>
+    </tbody></table></div>
+  </div>`;
+
+  panel.innerHTML = html;
+}
+
+// ============ PANEL: DATA ============
+function renderPanelData(){
+  const panel=document.getElementById('panel-data');
+  if(currentUser.role!=='admin'){panel.innerHTML='';return;}
+  panel.innerHTML=`
+  <div class="card"><h3>数据管理</h3>
+    <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">清除或重置当前数据</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-danger" onclick="confirmClear()">🗑 一键清除所有数据</button>
+      <button class="btn btn-outline" onclick="resetRates()">↩ 恢复默认费率</button>
+      <button class="btn btn-outline" onclick="resetAllLayers()">↩ 恢复默认层级配置</button>
+    </div></div>
+  <div class="card"><h3>数据统计</h3>
+    <div style="font-size:13px;color:var(--text-light)">
+      <p>• 层级配置：${Object.keys(layerConfigs).length} 个浆站</p>
+      <p>• 总在岗人数：${Object.values(STAFF_COUNTS).reduce((a,b)=>a+b,0)} 人</p>
+      <p>• 费率自定义：${JSON.stringify(rates)!==JSON.stringify(DEFAULT_RATES)?'已修改':'默认'}</p>
+      <p>• 达标站数（70%要求）：${STATIONS.filter(s=>s.actual>=70).length} / ${STATIONS.length}</p>
+      <p>• 不达标站数：${STATIONS.filter(s=>s.actual<70).length}</p>
+      <p>• 本地政策更新：${localPolicyUpdates.length} 条</p>
+      <p>• 基数调整记录：${baseAdjustHistory.length} 条</p>
+    </div></div>`;
+}
+
+function confirmClear(){
+  document.getElementById('confirmModal').classList.add('show');
+  document.getElementById('confirmMsg').textContent='确定要清除所有测算数据吗？';
+  document.getElementById('confirmOk').onclick=()=>{
+    layerAdjustState={};localPolicyUpdates=[];baseAdjustHistory=[];
+    localStorage.removeItem('ss7_adjust');localStorage.removeItem('ss7_policy');localStorage.removeItem('ss7_baseHist');
+    hideModal();renderAllPanels();
+  };
+}
+function hideModal(){document.getElementById('confirmModal').classList.remove('show');}
+function resetRates(){rates=JSON.parse(JSON.stringify(DEFAULT_RATES));saveRates();renderPanelRate();}
+function resetAllLayers(){STATIONS.forEach(s=>initLayerConfig(s.name));saveLayers();renderOverview();}
+
+
+// ============ PANEL: SETTINGS (Password Management) ============
+function renderSettings(){
+  const panel = document.getElementById('panel-settings');
+  if(!panel) return;
+  let html = '';
+  if(currentUser.role === 'admin'){
+    html += '<div class="card"><h3>\u{1F510} 用户密码管理</h3>'
+      + '<p style="font-size:13px;color:var(--text-light);margin-bottom:16px">管理员可重置任意用户的密码。重置后该用户需使用新密码登录。</p>'
+      + '<div class="tbl-wrap"><table><thead><tr><th>姓名</th><th>手机号</th><th>角色</th><th>所属浆站</th><th>操作</th></tr></thead><tbody>';
+    ROSTER.forEach(function(u){
+      var rl = u.role==='admin'?'管理员':(u.role==='management'?'经营层':'站长');
+      var sl = u.station ? u.station+'浆站' : '-';
+      var isSelf = u.phone === currentUser.phone;
+      html += '<tr'+(isSelf?' style="background:#f0f7ff"':'')+'>'
+        + '<td style="font-weight:600">'+u.name+(isSelf?' (我)':'')+'</td>'
+        + '<td>'+u.phone+'</td><td>'+rl+'</td><td>'+sl+'</td>'
+        + '<td><button class="btn btn-outline btn-sm" onclick="adminResetPwd(\x27'+u.phone+'\x27,\x27'+u.name+'\x27)">重置密码</button></td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+    html += '<div class="card"><h3>\u{1F511} 修改我的密码</h3>'
+      + '<div style="max-width:400px">'
+      + '<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-light);display:block;margin-bottom:4px">旧密码</label>'
+      + '<input type="password" id="myOldPwd" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px"></div>'
+      + '<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-light);display:block;margin-bottom:4px">新密码</label>'
+      + '<input type="password" id="myNewPwd" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px"></div>'
+      + '<div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-light);display:block;margin-bottom:4px">确认新密码</label>'
+      + '<input type="password" id="myNewPwd2" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px"></div>'
+      + '<button class="btn btn-primary" onclick="changeMyPwd()">修改密码</button>'
+      + '<div id="myPwdMsg" style="margin-top:10px;font-size:13px;min-height:20px"></div></div></div>';
+  } else {
+    var stationLabel = currentUser.station ? currentUser.station+'浆站' : '';
+    html += '<div class="card"><h3>\u{1F511} 修改密码'+(stationLabel?' — '+stationLabel:'')+'</h3>'
+      + '<div style="max-width:400px">'
+      + '<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-light);display:block;margin-bottom:4px">旧密码</label>'
+      + '<input type="password" id="myOldPwd" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px"></div>'
+      + '<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-light);display:block;margin-bottom:4px">新密码</label>'
+      + '<input type="password" id="myNewPwd" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px"></div>'
+      + '<div style="margin-bottom:16px"><label style="font-size:13px;color:var(--text-light);display:block;margin-bottom:4px">确认新密码</label>'
+      + '<input type="password" id="myNewPwd2" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px"></div>'
+      + '<button class="btn btn-primary" onclick="changeMyPwd()">修改密码</button>'
+      + '<div id="myPwdMsg" style="margin-top:10px;font-size:13px;min-height:20px"></div></div></div>';
+  }
+  panel.innerHTML = html;
+}
+
+function changeMyPwd(){
+  var oldPwd = document.getElementById('myOldPwd').value;
+  var newPwd = document.getElementById('myNewPwd').value;
+  var newPwd2 = document.getElementById('myNewPwd2').value;
+  var msg = document.getElementById('myPwdMsg');
+  if(!oldPwd || !newPwd || !newPwd2){ msg.innerHTML='<span style="color:var(--danger)">请填写所有字段</span>'; return; }
+  if(newPwd !== newPwd2){ msg.innerHTML='<span style="color:var(--danger)">两次输入的新密码不一致</span>'; return; }
+  if(newPwd.length < 4){ msg.innerHTML='<span style="color:var(--danger)">密码长度至少4位</span>'; return; }
+  var passwords = getPasswords();
+  if(passwords[currentUser.phone] !== oldPwd){ msg.innerHTML='<span style="color:var(--danger)">旧密码错误</span>'; return; }
+  passwords[currentUser.phone] = newPwd;
+  savePasswords(passwords);
+  // 清除登录态，要求用新密码重新登录
+  localStorage.removeItem('ss7_login');
+  localStorage.removeItem('ss7_user');
+  localStorage.removeItem('ss7_login_time');
+  currentUser = null;
+  // 跳转到登录页，提示使用新密码
+  document.getElementById('mainPage').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('loginName').value = '';
+  document.getElementById('loginPhone').value = '';
+  document.getElementById('loginPwd').value = '';
+  document.getElementById('loginErr').innerHTML = '<span style="color:var(--success)">✅ 密码修改成功，请用新密码重新登录</span>';
+}
+
+function adminResetPwd(phone, name){
+  document.getElementById('confirmModal').classList.add('show');
+  document.getElementById('confirmMsg').textContent = '确定要将 '+name+' 的密码重置为默认密码 123456 吗？';
+  document.getElementById('confirmOk').onclick = function(){
+    var passwords = getPasswords();
+    passwords[phone] = DEFAULT_PASSWORD;
+    savePasswords(passwords);
+    hideModal();
+    renderSettings();
+    alert(name + ' 的密码已重置为 123456');
+  };
+}
+
+// ============ START ============
+init();
+</script>
+</body>
+</html>
